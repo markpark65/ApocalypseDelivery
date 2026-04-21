@@ -20,7 +20,7 @@ void AApocalypseGameMode::BeginPlay()
     bIsTimerActive = false;
     if (BackgroundMusic)
     {
-        // 2D 사운드로 재생 (어디서든 일정한 볼륨으로 들림)
+        // 2D 사운드로 재생
         BGMComponent = UGameplayStatics::SpawnSound2D(this, BackgroundMusic);
     }
     if (HUDWidgetClass)
@@ -47,7 +47,6 @@ void AApocalypseGameMode::BeginPlay()
         PC->bShowMouseCursor = true;
         // Game과 UI를 동시에 조작할 수 있게 설정
         FInputModeGameAndUI InputMode;
-        // HUD가 생성된 직후라면 위젯을 포커스 타겟으로 지정할 수도 있습니다.
         if (CurrentHUD)
         {
             InputMode.SetWidgetToFocus(CurrentHUD->TakeWidget());
@@ -142,7 +141,6 @@ void AApocalypseGameMode::Tick(float DeltaTime)
     {
         float BatteryPct = PlayerDrone->CurrentBattery / PlayerDrone->MaxBattery;
 
-        // 이제 GetCurrentVelocity()를 호출
         float SpeedValue = PlayerDrone->GetCurrentVelocity().Size();
 
         CurrentHUD->UpdateStats(BatteryPct, SpeedValue);
