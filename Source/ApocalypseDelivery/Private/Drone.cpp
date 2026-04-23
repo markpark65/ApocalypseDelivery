@@ -1,15 +1,21 @@
 ﻿#include "Drone.h"
 #include "ApocalypseDroneController.h"
 #include "ADInteractable.h"
-#include "Components/CapsuleComponent.h"
-#include "Components/SkeletalMeshComponent.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "Camera/CameraComponent.h"
+
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "Components/SphereComponent.h"
+
 #include "ApocalypseHUD.h"
 #include "ApocalypseGameMode.h"
+
+#include "Components/CapsuleComponent.h"
+#include "Components/SphereComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/FloatingPawnMovement.h"
+#include "Camera/CameraComponent.h"
+#include "PhysicsEngine/PhysicsConstraintComponent.h"
+
 
 ADrone::ADrone()
 	: AttachedPackage(nullptr)
@@ -31,7 +37,7 @@ ADrone::ADrone()
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
 	SpringArmComp->SetupAttachment(RootComponent);
 	SpringArmComp->TargetArmLength = 400.0f;
-	SpringArmComp->bUsePawnControlRotation = false;
+	SpringArmComp->bUsePawnControlRotation = true;
 
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
@@ -45,6 +51,12 @@ ADrone::ADrone()
 	ShieldMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ShieldMesh->SetVisibility(false);
 
+	MovementComp = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComp"));
+	MovementComp->SetUpdatedComponent(CapsuleComp);
+
+	PhysicsConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("PhysicalConstComp"));
+	PhysicsConstraint->SetupAttachment(RootComponent);
+
 	CapsuleComp->OnComponentHit.AddDynamic(this, &ADrone::OnDroneHit);
 }
 
@@ -56,6 +68,9 @@ void ADrone::BeginPlay()
 	OriginalSpeed = MoveSpeed;
 
 	CurrentBattery = MaxBattery;
+	IsMoving = false;
+	DesiredDirection = { 0,0,0 }; 
+	GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode());
 
 	// 쉴드 초기 상태 설정
 	if (ShieldMesh)
@@ -67,66 +82,45 @@ void ADrone::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//  및 속도 계산
-	FVector TargetAcceleration = FVector(MovementInput.X, MovementInput.Y, MovementInput.Z);
-	CurrentVelocity += TargetAcceleration * Acceleration * DeltaTime;
-
-	// 마찰력 적용
-	CurrentVelocity -= CurrentVelocity * Friction * DeltaTime;
-
-	CurrentVelocity = CurrentVelocity.GetClampedToSize(0.f, MoveSpeed);
-
-	//이동 벡터 계산
-	FVector DeltaLocation = (GetActorForwardVector() * CurrentVelocity.X +
-		GetActorRightVector() * CurrentVelocity.Y +
-		GetActorUpVector() * CurrentVelocity.Z) * DeltaTime;
-
-	//회전 처리
-	if (!RotationInput.IsZero())
+	
+	if (GM->IsTimerActive())
 	{
-		FRotator NewRotation = RotationInput * RotationSpeed * DeltaTime;
-		AddActorLocalRotation(NewRotation);
-	}
-
-	// 충돌 판정
-	FHitResult HitResult;
-
-	// 벽을 뚫지 않도록 함
-	AddActorWorldOffset(DeltaLocation, true, &HitResult);
-
-	//충돌 시 속도 감쇄
-	if (HitResult.IsValidBlockingHit())
-	{
-		// 충돌한 면Normal을 기준 속도를 투영하여 뚫림 방지
-		CurrentVelocity = FVector::VectorPlaneProject(CurrentVelocity, HitResult.Normal);
-
-		// 바닥 판정 Z축 법선이 위를 향할 때
-		bIsOnGround = HitResult.ImpactNormal.Z > 0.5f;
-	}
-	else
-	{
-		bIsOnGround = false;
-	}
-
-	//입력값 초기화
-	MovementInput = FVector::ZeroVector;
-	RotationInput = FRotator::ZeroRotator;
-	float SpeedRatio = CurrentVelocity.Size() / MoveSpeed;
-	float DrainRate = 1.0f + (SpeedRatio * 2.0f);
-	if (AApocalypseGameMode* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		// 퀘스트가 시작되어 타이머가 돌고 있을 때만 배터리 감소
-		if (GM->IsTimerActive())
+		//Calculate velocity and apply to the movement
+		CurrentDirection = FMath::VInterpTo(CurrentDirection, DesiredDirection, DeltaTime, MovementLerpRate);
+		CurrentBattery -= CurrentDirection.Length() * DeltaTime;
+		if (CurrentBattery <= 0)
 		{
-			CurrentBattery -= DrainRate * DeltaTime;
-
-			if (CurrentBattery <= 0)
-			{
-				CurrentBattery = 0;
-				HandleGameOver();
-			}
+			CurrentBattery = 0;
+			HandleGameOver();
 		}
+		AddMovementInput(CurrentDirection);
 	}
+	
+
+
+	//Rotate pawn
+	FRotator TargetRotation(0, 0, 0);
+	//Pitch, changed by velocity
+	if (IsMoving) {
+		double TiltDirection = FVector::DotProduct(CurrentDirection, CameraComp->GetForwardVector());
+		double RollDirection = FVector::DotProduct(CurrentDirection, CameraComp->GetRightVector());
+		TargetRotation.Pitch = -TiltDirection * GetMovementComponent()->GetMaxSpeed() / VelocityTiltRatio;
+		TargetRotation.Roll = RollDirection * GetMovementComponent()->GetMaxSpeed() / VelocityTiltRatio;
+	}
+	else {
+		TargetRotation.Pitch = 0;
+	}
+	//Yaw, always chase the camera.
+	TargetRotation.Yaw = CameraComp->GetComponentRotation().Yaw;
+	//Roll, reset to 0 while not rolling.
+	UE_LOG(LogTemp, Warning, TEXT("Rolling - %d"), IsRolling);
+	if (!IsRolling) {
+		//TargetRotation.Roll = RollDirection * GetMovementComponent()->GetMaxSpeed() / VelocityTiltRatio;
+	}
+	else {
+		TargetRotation.Roll = GetActorRotation().Roll;
+	}
+	SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, RotationLerpRate));
 }
 
 void ADrone::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -136,45 +130,74 @@ void ADrone::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	{
 		if (AApocalypseDroneController* PC = Cast<AApocalypseDroneController>(GetController()))
 		{
-			EnhancedInput->BindAction(PC->MoveAction, ETriggerEvent::Triggered, this, &ADrone::Move);
+			EnhancedInput->BindAction(PC->MoveAction, ETriggerEvent::Triggered, this, &ADrone::BeginMove);
+			EnhancedInput->BindAction(PC->MoveAction, ETriggerEvent::Completed, this, &ADrone::EndMove);
 			EnhancedInput->BindAction(PC->LookAction, ETriggerEvent::Triggered, this, &ADrone::Look);
-			EnhancedInput->BindAction(PC->UpDownAction, ETriggerEvent::Triggered, this, &ADrone::UpDown);
-			EnhancedInput->BindAction(PC->RollAction, ETriggerEvent::Triggered, this, &ADrone::Roll);
+			//EnhancedInput->BindAction(PC->UpDownAction, ETriggerEvent::Triggered, this, &ADrone::UpDown);
+			EnhancedInput->BindAction(PC->RollAction, ETriggerEvent::Triggered, this, &ADrone::BeginRolling);
+			EnhancedInput->BindAction(PC->RollAction, ETriggerEvent::Completed, this, &ADrone::EndRolling);
 			EnhancedInput->BindAction(PC->PickupAction, ETriggerEvent::Triggered, this, &ADrone::Pickup);
 		}
 	}
 }
-void ADrone::Move(const FInputActionValue& Value)
+void ADrone::BeginMove(const FInputActionValue& Value)
 {
-	if (auto* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		if (!GM->IsTimerActive()) return;
+	if (!Controller) return;
+	IsMoving = true;
+	//Set desired movement direction to unit vector of local coordinate
+	FVector Input = Value.Get<FVector>();
+	FVector Direction(0.0);
+	if (!FMath::IsNearlyZero(Input.X)) {
+		Direction += CameraComp->GetForwardVector() * Input.X;
 	}
-	FVector2D Input = Value.Get<FVector2D>();
-	float Modifier = bIsReverseControl ? -1.0f : 1.0f;
-	MovementInput.X = Input.X * Modifier;
-	MovementInput.Y = Input.Y * Modifier;
+	if (!FMath::IsNearlyZero(Input.Y)) {
+		Direction += CameraComp->GetRightVector() * Input.Y;
+	}
+	if (!FMath::IsNearlyZero(Input.Z)) {
+		Direction += FVector(0, 0, Input.Z);
+	}
+	DesiredDirection = Direction.GetSafeNormal();
+}
+void ADrone::EndMove(const FInputActionValue& Value)
+{
+	if (!Controller) return;
+	IsMoving = false;
+	//Reset desired movement velocity when the input disaapears
+	DesiredDirection = { 0, 0, 0 };
 }
 void ADrone::Look(const FInputActionValue& Value)
 {
-
-	if (bIsLookFrozen) return;
+	if (!Controller) return;
+	//Rotate view using mouse input
 	FVector2D Input = Value.Get<FVector2D>();
-	RotationInput.Yaw = Input.X;
-	RotationInput.Pitch = -Input.Y;
-}
-void ADrone::UpDown(const FInputActionValue& Value)
-{
-	if (auto* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		if (!GM->IsTimerActive()) return;
+	if (!FMath::IsNearlyZero(Input.X)) {
+		AddControllerYawInput(Input.X);
 	}
-	float Modifier = bIsReverseControl ? -1.0f : 1.0f;
-	MovementInput.Z = Value.Get<float>() * Modifier;
+	if (!FMath::IsNearlyZero(Input.Y)) {
+		//limit from -90 to 90 degrees
+
+		float CurrentPitch = FRotator::NormalizeAxis(GetControlRotation().Pitch);
+		//if ((Input.Y < 0 && CurrentPitch + Input.Y > -85) || (Input.Y > 0 && CurrentPitch + Input.Y < 85.0)) {
+		AddControllerPitchInput(Input.Y);
+		//}
+	}
 }
-void ADrone::Roll(const FInputActionValue& Value)
+void ADrone::BeginRolling(const FInputActionValue& Value)
 {
-	RotationInput.Roll = Value.Get<float>();
+	if (!Controller) return;
+	//Add Roll Rotation
+	float Input = Value.Get<float>();
+	if (!FMath::IsNearlyZero(Input)) {
+		AddActorLocalRotation(FRotator(0, 0, Input * RollingSpeed * GetWorld()->GetDeltaSeconds()));
+		IsRolling = true;	//Rolling Status
+	}
+}
+
+void ADrone::EndRolling(const FInputActionValue& Value)
+{
+	if (!Controller) return;
+	//Clear Rolling Status
+	IsRolling = false;
 }
 void ADrone::Pickup(const FInputActionValue& Value)
 {
@@ -199,7 +222,7 @@ void ADrone::Pickup(const FInputActionValue& Value)
 			PackageMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
 			PackageMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 
-			if (auto* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
+			if (IsValid(GM))
 			{
 				if (GM->CurrentHUD) GM->CurrentHUD->SetInteractionPrompt(true, TEXT("Press F to Pickup"));
 			}
@@ -234,7 +257,7 @@ void ADrone::Pickup(const FInputActionValue& Value)
 				AttachedPackage->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 				AttachedPackage->SetActorRelativeLocation(FVector(0, 0, -100.f));
 
-				if (auto* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
+				if (IsValid(GM))
 				{
 					if (GM->CurrentHUD) GM->CurrentHUD->SetInteractionPrompt(true, TEXT("Press F to Drop"));
 				}
@@ -331,7 +354,7 @@ void ADrone::NotifyActorBeginOverlap(AActor* OtherActor)
 
 	if (OtherActor->ActorHasTag("Package"))
 	{
-		if (AApocalypseGameMode* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
+		if (IsValid(GM))
 		{
 			if (GM->CurrentHUD)
 			{
@@ -354,7 +377,7 @@ void ADrone::NotifyActorEndOverlap(AActor* OtherActor)
 
 	if (OtherActor && OtherActor->ActorHasTag("Package"))
 	{
-		if (auto* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
+		if (IsValid(GM))
 		{
 			if (GM->CurrentHUD)
 			{
@@ -369,7 +392,7 @@ void ADrone::HandleGameOver()
 
 	// 드론 조작 금지
 	DisableInput(Cast<APlayerController>(GetController()));
-	CurrentVelocity = FVector::ZeroVector;
+	//CurrentVelocity = FVector::ZeroVector;
 	SetActorHiddenInGame(true);
 
 	if (AttachedPackage)
@@ -382,7 +405,7 @@ void ADrone::HandleGameOver()
 }
 void ADrone::DelayedGameOver()
 {
-	if (AApocalypseGameMode* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
+	if (IsValid(GM))
 	{
 		GM->EndGame(false);
 	}
