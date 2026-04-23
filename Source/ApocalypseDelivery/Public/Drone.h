@@ -44,6 +44,34 @@ public:
 
     void ResetSpeed();
     void HandleGameOver();
+
+
+     
+    //탑다운 뷰를 그대로 미니맵에 적용
+    
+    // ── 미니맵 관련 변수──
+    //탑다운 SceneCapture – 드론 위 2000cm에서 수직으로 촬영
+    UPROPERTY(VisibleAnywhere, Category = "Minimap")
+    class USceneCaptureComponent2D* MinimapCaptureComp;
+
+    //SceneCapture가 쓰는 렌더 타겟 (BeginPlay에서 자동 생성)
+    UPROPERTY(BlueprintReadOnly, Category = "Minimap")
+    class UTextureRenderTarget2D* MinimapRenderTarget;
+
+    //미니맵의 투영 너비.
+    UPROPERTY(EditAnywhere, Category = "Minimap")
+    float MinimapOrthoWidth = 5000.0f;
+
+    //렌더 타겟 해상도.
+    UPROPERTY(EditAnywhere, Category = "Minimap")
+    int32 MinimapTextureSize = 256;
+
+    /*
+    // ── 별도 약도(정적 텍스처) 사용 시 추가 ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minimap")
+    class UTexture2D* StaticMinimapTexture;
+    */
+    
 protected:
 	virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;

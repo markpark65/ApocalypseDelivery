@@ -1,5 +1,6 @@
 ﻿#include "ApocalypseHUD.h"
 #include "ApocalypseGameMode.h"
+#include "MinimapWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 
@@ -42,5 +43,42 @@ void UApocalypseHUD::UpdateStatus(int32 Stage, int32 Wave, int32 Count, int32 Ta
     if (DeliveryText)
     {
         DeliveryText->SetText(FText::Format(FText::FromString(TEXT("Delivered: {0} / {1}")), FText::AsNumber(Count), FText::AsNumber(Target)));
+    }
+}
+
+// ── 미니맵 관련 함수 구현──
+
+void UApocalypseHUD::InitializeMinimap(UTextureRenderTarget2D* RenderTarget)
+{
+    if (MinimapWidget && RenderTarget)
+    {
+        MinimapWidget->SetRenderTarget(RenderTarget);
+        //UE_LOG(LogTemp, Log, TEXT("Minimap RenderTarget initialized."));
+    }
+}
+
+/*
+// ── 정적 약도 미니맵 사용 시 추가 ──
+void UApocalypseHUD::InitializeMinimapWithTexture(UTexture2D* MinimapTexture)
+{
+    if (MinimapWidget && MinimapTexture)
+    {
+        MinimapWidget->SetStaticBackground(MinimapTexture);
+    }
+}
+*/
+
+void UApocalypseHUD::UpdateMinimap(
+    FVector DronePos,
+    bool bHasTarget, FVector TargetPos,
+    bool bHasPackage, FVector PackagePos)
+{
+    if (MinimapWidget)
+    {
+        MinimapWidget->UpdateMarkers(
+            DronePos,
+            bHasTarget, TargetPos,
+            bHasPackage, PackagePos
+        );
     }
 }

@@ -114,6 +114,16 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WaveSystem")
     int32 CurrentWaveIndex = 0;
+
+    //──미니맵 마커 관련 변수──
+    // 현재 배달 목표 플랫폼
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameLogic")
+    class ADeliveryPlatform* CurrentPlatform;
+
+    // 현재 스폰된 화물 (미니맵 표시용)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameLogic")
+    class ADeliveryPackage* CurrentPackage;
+
 private:
     void UpdateDifficulty();
     class AMeteorSpawner* Spawner;
@@ -125,4 +135,7 @@ private:
 
     UPROPERTY()
     class ADeliveryPlatform* CurrentTargetPlatform;
+
+    //──미니맵 마커 데이터를 수집해 HUD에 전달하는 함수──
+    void UpdateMinimapMarkers();
 };

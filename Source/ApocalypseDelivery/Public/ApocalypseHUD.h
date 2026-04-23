@@ -24,6 +24,29 @@ public:
     UPROPERTY(BlueprintReadOnly, meta = (BindWidget, AllowPrivateAccess = "true"))
     class UTextBlock* SuccessMessage;
 
+    // ── 미니맵 관련 변수──
+    //BP_ApocalypseHUD 위젯 계층에 "MinimapWidget" 이름으로 BP_MinimapWidget 인스턴스를 배치하면 자동으로 바인딩.
+    UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+    class UMinimapWidget* MinimapWidget;
+
+    // ── 미니맵 관련 함수──
+    //Drone::BeginPlay에서 RenderTarget이 생성된 뒤 MinimapWidget에 연결.
+    UFUNCTION(BlueprintCallable, Category = "Minimap")
+    void InitializeMinimap(UTextureRenderTarget2D* RenderTarget);
+
+    /*
+    // ── 정적 약도 미니맵 사용 시 활성화 ──
+    UFUNCTION(BlueprintCallable, Category = "Minimap")
+    void InitializeMinimapWithTexture(UTexture2D* MinimapTexture);
+    */
+
+    // ApocalypseGameMode::Tick에서 마커 위치 갱신.
+    void UpdateMinimap(
+        FVector DronePos,
+        bool bHasTarget, FVector TargetPos,
+        bool bHasPackage, FVector PackagePos
+    );
+
     // 초기화 시 버튼 클릭 이벤트 연결
     virtual void NativeConstruct() override;
 

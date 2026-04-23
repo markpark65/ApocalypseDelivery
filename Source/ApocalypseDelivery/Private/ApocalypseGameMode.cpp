@@ -2,6 +2,7 @@
 #include "MeteorSpawner.h"
 #include "Drone.h"
 #include "PackageSpawner.h"
+#include "DeliveryPackage.h"
 #include "DeliveryPlatform.h"
 #include "ApocalypseHUD.h"
 #include "ItemSpawner.h"
@@ -16,6 +17,13 @@ AApocalypseGameMode::AApocalypseGameMode() { PrimaryActorTick.bCanEverTick = tru
 void AApocalypseGameMode::BeginPlay()
 {
     Super::BeginPlay();
+
+    //──미니맵 마커 초기화──
+    CurrentPlatform = nullptr;
+    CurrentTargetPlatform = nullptr;
+    CurrentPackage = nullptr;
+    bIsTimerActive = false;
+
     CurrentTimeLeft = TimeLimit;
     bIsTimerActive = false;
     if (BackgroundMusic)
@@ -70,7 +78,18 @@ void AApocalypseGameMode::StartQuest()
     {
         PSpawner->SpawnPackage();
     }
+
+    //스폰된 패키지를 즉시 미니맵 변수에 할당
+    TArray<AActor*> FoundPackages;
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Package"), FoundPackages);
+    if (FoundPackages.Num() > 0)
+    {
+        CurrentPackage = Cast<ADeliveryPackage>(FoundPackages[0]);
+    }
+
     CurrentTargetPlatform = GetRandomAvailablePlatform();
+    CurrentPlatform = CurrentTargetPlatform; // 미니맵용 변수 재설정
+
     TArray<AActor*> AllPlatforms;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADeliveryPlatform::StaticClass(), AllPlatforms);
     for (AActor* Actor : AllPlatforms)
@@ -92,7 +111,18 @@ void AApocalypseGameMode::StartQuest()
         CurrentTargetPlatform->SetIsTarget(true);
         UE_LOG(LogTemp, Warning, TEXT("New Target Platform Assigned!"));
     }
+
+    // ── 미니맵 마커 관련 기능 ──
+    CurrentPlatform = CurrentTargetPlatform;
+
+    if (CurrentTargetPlatform)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Quest Started! Target Platform: %s"), *CurrentTargetPlatform->GetName());
+    }
+
+    bIsTimerActive = true;
 }
+
 void AApocalypseGameMode::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
@@ -160,6 +190,82 @@ void AApocalypseGameMode::Tick(float DeltaTime)
             CurrentHUD->UpdateDistance(0.0f);
         }
     }
+
+    // ── 매 프레임마다 미니맵 갱신 ──
+    if (bIsTimerActive && CurrentHUD && PlayerDrone)
+    {
+        // 드론 위치
+        FVector DronePos = PlayerDrone->GetActorLocation();
+
+        // 목적지 정보 (StartQuest에서 이미 정해진 CurrentPlatform만 사용)
+        bool bHasTarget = IsValid(CurrentPlatform);
+        FVector TargetPos = bHasTarget ? CurrentPlatform->GetActorLocation() : FVector::ZeroVector;
+
+        // 화물 정보 갱신
+        bool bHasPackage = false;
+        FVector PackagePos = FVector::ZeroVector;
+
+        if (!CurrentPackage)
+        {
+            TArray<AActor*> FoundPackages;
+            UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Package"), FoundPackages);
+            if (FoundPackages.Num() > 0)
+            {
+                CurrentPackage = Cast<ADeliveryPackage>(FoundPackages[0]);
+            }
+        }
+
+        if (CurrentPackage && PlayerDrone->GetAttachedPackage() == nullptr)
+        {
+            bHasPackage = true;
+            PackagePos = CurrentPackage->GetActorLocation();
+        }
+
+        // HUD 업데이트 호출
+        CurrentHUD->UpdateMinimap(DronePos, bHasTarget, TargetPos, bHasPackage, PackagePos);
+    }
+    else if (!bIsTimerActive && CurrentHUD)
+    {
+        // 퀘스트 시작 전에는 마커 숨김.
+        CurrentHUD->UpdateMinimap(FVector::ZeroVector, false, FVector::ZeroVector, false, FVector::ZeroVector);
+    }
+}
+
+// ── 미니맵 데이터 수집 및 전달 ──
+void AApocalypseGameMode::UpdateMinimapMarkers()
+{
+    if (!CurrentHUD || !PlayerDrone) return;
+
+    FVector DronePos = PlayerDrone->GetActorLocation();
+
+    //목표 플랫폼
+    bool    bHasTarget = (CurrentTargetPlatform != nullptr);
+    FVector TargetPos = bHasTarget ? CurrentTargetPlatform->GetActorLocation() : FVector::ZeroVector;
+
+    //드론에 부착되지 않은 경우에만 마커 표시
+    bool    bHasPackage = false;
+    FVector PackagePos = FVector::ZeroVector;
+
+    AActor* Attached = PlayerDrone->GetAttachedPackage();
+    if (!Attached)
+    {
+        //씬에 있는 Package 탐색
+        TArray<AActor*> FoundPackages;
+        UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Package"), FoundPackages);
+
+        if (FoundPackages.Num() > 0)
+        {
+            bHasPackage = true;
+            PackagePos = FoundPackages[0]->GetActorLocation(); //첫 번째 화물
+        }
+    }
+
+    //HUD → MinimapWidget 전달
+    CurrentHUD->UpdateMinimap(
+        DronePos,
+        bHasTarget, TargetPos,
+        bHasPackage, PackagePos
+    );
 }
 
 void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
@@ -167,6 +273,12 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     bIsTimerActive = false;
     DeliveredCount++;
     CurrentWave++;
+
+    // 다음 StartQuest 전까지 미니맵 마커를 비워둔다.
+    CurrentPackage = nullptr;
+    CurrentPlatform = nullptr;
+    CurrentTargetPlatform = nullptr;
+    // ────────────────
 
     if (TargetPlatform)
     {
