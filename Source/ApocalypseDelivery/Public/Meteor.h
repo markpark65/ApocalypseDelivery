@@ -24,6 +24,8 @@ public:
 
 	void SetMeteorSpeed(float NewSpeed);
 
+	void SetMeteorDirection(FVector TargetLocation);
+
 protected:
 	virtual void BeginPlay() override;
 

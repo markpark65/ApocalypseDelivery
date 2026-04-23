@@ -54,6 +54,17 @@ void AMeteor::SetMeteorSpeed(float NewSpeed)
         ProjectileMovement->Velocity = FVector(0.f, 0.f, -1.f);
     }
 }
+void AMeteor::SetMeteorDirection(FVector TargetLocation)
+{
+    if (ProjectileMovement)
+    {
+        FVector Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();
+
+        ProjectileMovement->Velocity = Direction * ProjectileMovement->InitialSpeed;
+
+        SetActorRotation(Direction.Rotation());
+    }
+}
 void AMeteor::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
 {
     Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
