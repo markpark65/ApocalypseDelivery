@@ -55,7 +55,7 @@ protected:
 
     // 컴포넌트
     UPROPERTY(VisibleAnywhere, Category = "Components")
-    class UCapsuleComponent* CapsuleComp;
+    class UBoxComponent* BoxComp;
 
     UPROPERTY(VisibleAnywhere, Category = "Components")
     class USkeletalMeshComponent* MeshComp;
@@ -132,13 +132,14 @@ private:
     bool IsRolling;
     bool CanMove;
 
+    /*
     // 충돌 및 상태 관리를 위한 변수 유지
     float VerticalVelocity = 0.0f;
     float CapsuleHalfHeight;
     bool bIsOnGround = false;
 
     float OriginalSpeed;
-
+    */
     //조작 방해 아이템
     FTimerHandle ReverseTimerHandle;
     void ResetReverseControl();

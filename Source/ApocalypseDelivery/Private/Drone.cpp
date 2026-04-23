@@ -10,6 +10,7 @@
 
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
@@ -19,16 +20,16 @@
 
 ADrone::ADrone()
 	: AttachedPackage(nullptr)
-	, CapsuleHalfHeight(0.0f)
+	//, CapsuleHalfHeight(0.0f)
 	, CurrentBattery(0.0f)
-	, OriginalSpeed(0.0f)
-	, bIsOnGround(false)
+	//, OriginalSpeed(0.0f)
+	//, bIsOnGround(false)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	CapsuleComp = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComp"));
-	SetRootComponent(CapsuleComp);
-	CapsuleComp->SetSimulatePhysics(false);
+	BoxComp = CreateDefaultSubobject<UBoxComponent>(TEXT("CapsuleComp"));
+	SetRootComponent(BoxComp);
+	BoxComp->SetSimulatePhysics(false);
 
 	MeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetupAttachment(RootComponent);
@@ -52,18 +53,18 @@ ADrone::ADrone()
 	ShieldMesh->SetVisibility(false);
 
 	MovementComp = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComp"));
-	MovementComp->SetUpdatedComponent(CapsuleComp);
+	MovementComp->SetUpdatedComponent(BoxComp);
 
 	PhysicsConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("PhysicalConstComp"));
-	PhysicsConstraint->SetupAttachment(CapsuleComp);
+	PhysicsConstraint->SetupAttachment(RootComponent);
 }
 
 void ADrone::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	CapsuleHalfHeight = CapsuleComp->GetScaledCapsuleHalfHeight();
-	OriginalSpeed = MoveSpeed;
+	//CapsuleHalfHeight = CapsuleComp->GetScaledCapsuleHalfHeight();
+	//OriginalSpeed = MoveSpeed;
 
 	CurrentBattery = MaxBattery;
 	IsMoving = false;
@@ -75,7 +76,7 @@ void ADrone::BeginPlay()
 	{
 		ShieldMesh->SetVisibility(false);
 	}
-	CapsuleComp->OnComponentHit.AddDynamic(this, &ADrone::OnDroneHit);
+	BoxComp->OnComponentHit.AddDynamic(this, &ADrone::OnDroneHit);
 }
 void ADrone::Tick(float DeltaTime)
 {
@@ -143,7 +144,7 @@ void ADrone::BeginMove(const FInputActionValue& Value)
 	if (!Controller) return;
 	IsMoving = true;
 	//Set desired movement direction to unit vector of local coordinate
-	FVector Input = Value.Get<FVector>();
+	FVector Input = Value.Get<FVector>() * (bIsReverseControl ? -1 : 1);
 	FVector Direction(0.0);
 	if (!FMath::IsNearlyZero(Input.X)) {
 		Direction += CameraComp->GetForwardVector() * Input.X;
@@ -221,7 +222,7 @@ void ADrone::Pickup(const FInputActionValue& Value)
 	//Set PhysicalConstraint
 	UPrimitiveComponent* Target = Cast<UPrimitiveComponent>(AttachedPackage->GetRootComponent());
 	AttachedPackage->SetActorLocation(GetActorLocation() - GetActorUpVector() * HoldingDistance);
-	PhysicsConstraint->SetConstrainedComponents(Cast<UPrimitiveComponent>(CapsuleComp), NAME_None, Target, NAME_None);
+	PhysicsConstraint->SetConstrainedComponents(Cast<UPrimitiveComponent>(RootComponent), NAME_None, Target, NAME_None);
 
 	PhysicsConstraint->SetLinearXLimit(LCM_Locked, 0.f);
 	PhysicsConstraint->SetLinearYLimit(LCM_Locked, 0.f);
@@ -233,7 +234,7 @@ void ADrone::Pickup(const FInputActionValue& Value)
 }
 void ADrone::SetTemporarySpeed(float Multiplier, float Duration)
 {
-	MoveSpeed = OriginalSpeed * Multiplier;
+	//MoveSpeed = OriginalSpeed * Multiplier;
 
 	GetWorldTimerManager().SetTimer(SpeedTimerHandle, this, &ADrone::ResetSpeed, Duration, false);
 	UE_LOG(LogTemp, Warning, TEXT("Speed Changed! Multiplier: %f"), Multiplier);
@@ -241,7 +242,7 @@ void ADrone::SetTemporarySpeed(float Multiplier, float Duration)
 
 void ADrone::ResetSpeed()
 {
-	MoveSpeed = OriginalSpeed;
+	//MoveSpeed = OriginalSpeed;
 	UE_LOG(LogTemp, Warning, TEXT("Speed Restored."));
 }
 
