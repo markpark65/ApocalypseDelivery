@@ -6,14 +6,17 @@
 ADeliveryPackage::ADeliveryPackage()
 {
     PrimaryActorTick.bCanEverTick = true;
+    /*
     CollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComp"));
     RootComponent = CollisionComp;
     CollisionComp->SetBoxExtent(FVector(50.f, 50.f, 50.f));
+    CollisionComp->SetSimulatePhysics(true);
     CollisionComp->SetCollisionProfileName(TEXT("PhysicsActor"));
 
     MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-    MeshComp->SetupAttachment(RootComponent);
-
+    MeshComp->SetupAttachment(RootComponent);*/
+    MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
+    RootComponent = MeshComp;
     Tags.Add(FName("Package"));
 
 }

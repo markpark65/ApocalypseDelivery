@@ -107,8 +107,10 @@ protected:
     // 배달
     UPROPERTY(VisibleAnywhere, Category = "Interaction")
     class USphereComponent* InteractionSphere; // 상자 감지 영역
-    UPROPERTY(BlueprintReadOnly, Category = "Interaction")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
     AActor* AttachedPackage;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+    float HoldingDistance;
 
     //충돌
     UFUNCTION()

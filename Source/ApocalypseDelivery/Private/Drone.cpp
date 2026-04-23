@@ -55,9 +55,7 @@ ADrone::ADrone()
 	MovementComp->SetUpdatedComponent(CapsuleComp);
 
 	PhysicsConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("PhysicalConstComp"));
-	PhysicsConstraint->SetupAttachment(RootComponent);
-
-	CapsuleComp->OnComponentHit.AddDynamic(this, &ADrone::OnDroneHit);
+	PhysicsConstraint->SetupAttachment(CapsuleComp);
 }
 
 void ADrone::BeginPlay()
@@ -77,6 +75,7 @@ void ADrone::BeginPlay()
 	{
 		ShieldMesh->SetVisibility(false);
 	}
+	CapsuleComp->OnComponentHit.AddDynamic(this, &ADrone::OnDroneHit);
 }
 void ADrone::Tick(float DeltaTime)
 {
@@ -113,7 +112,6 @@ void ADrone::Tick(float DeltaTime)
 	//Yaw, always chase the camera.
 	TargetRotation.Yaw = CameraComp->GetComponentRotation().Yaw;
 	//Roll, reset to 0 while not rolling.
-	UE_LOG(LogTemp, Warning, TEXT("Rolling - %d"), IsRolling);
 	if (!IsRolling) {
 		//TargetRotation.Roll = RollDirection * GetMovementComponent()->GetMaxSpeed() / VelocityTiltRatio;
 	}
@@ -201,70 +199,37 @@ void ADrone::EndRolling(const FInputActionValue& Value)
 }
 void ADrone::Pickup(const FInputActionValue& Value)
 {
-	if (AttachedPackage)
-	{
-		// 부착 해제
-		AActor* PackageToDrop = AttachedPackage;
-		AttachedPackage = nullptr;
-		PackageToDrop->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-
-		if (UPrimitiveComponent* PackageMesh = Cast<UPrimitiveComponent>(PackageToDrop->GetRootComponent()))
-		{
-			// 물리 및 충돌 설정 복구
-			PackageMesh->SetSimulatePhysics(true);
-			PackageMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			PackageMesh->SetCollisionProfileName(TEXT("PhysicsActor"));
-
-			//다시 잡는 현상 방지
-			FVector DropLocation = GetActorLocation() + (GetActorUpVector() * -150.0f);
-			PackageToDrop->SetActorLocation(DropLocation);
-			// 날아가는 현상 방지
-			PackageMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
-			PackageMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-
-			if (IsValid(GM))
-			{
-				if (GM->CurrentHUD) GM->CurrentHUD->SetInteractionPrompt(true, TEXT("Press F to Pickup"));
-			}
-		}
-
-		UE_LOG(LogTemp, Warning, TEXT("Package Released safely!"));
+	if (IsValid(AttachedPackage)) {
+		return;
 	}
-	else
+	TArray<AActor*> OverlappingActors;
+	InteractionSphere->GetOverlappingActors(OverlappingActors);
+
+	for (AActor* Actor : OverlappingActors)
 	{
-		TArray<AActor*> OverlappingActors;
-		InteractionSphere->GetOverlappingActors(OverlappingActors);
-
-		for (AActor* Actor : OverlappingActors)
+		// 인터페이스(IADInteractable)나 태그를 확인
+		if (Actor->ActorHasTag("Package"))
 		{
-			// 인터페이스(IADInteractable)나 태그를 확인
-			if (Actor->ActorHasTag("Package"))
-			{
-				AttachedPackage = Actor;
-				if (UPrimitiveComponent* PackageMesh = Cast<UPrimitiveComponent>(AttachedPackage->GetRootComponent()))
-				{
-					// 부착 시에는 물리를 끄고 충돌을 비활성화
-					PackageMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
-					PackageMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-
-					PackageMesh->SetSimulatePhysics(false);
-
-					PackageMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-					PackageMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
-				}
-
-				// 드론 하단 소켓 부착
-				AttachedPackage->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-				AttachedPackage->SetActorRelativeLocation(FVector(0, 0, -100.f));
-
-				if (IsValid(GM))
-				{
-					if (GM->CurrentHUD) GM->CurrentHUD->SetInteractionPrompt(true, TEXT("Press F to Drop"));
-				}
-				break;
-			}
+			AttachedPackage = Actor;
+			break;
 		}
 	}
+	if (!IsValid(AttachedPackage)) {
+		return;
+	}
+
+	//Set PhysicalConstraint
+	UPrimitiveComponent* Target = Cast<UPrimitiveComponent>(AttachedPackage->GetRootComponent());
+	AttachedPackage->SetActorLocation(GetActorLocation() - GetActorUpVector() * HoldingDistance);
+	PhysicsConstraint->SetConstrainedComponents(Cast<UPrimitiveComponent>(CapsuleComp), NAME_None, Target, NAME_None);
+
+	PhysicsConstraint->SetLinearXLimit(LCM_Locked, 0.f);
+	PhysicsConstraint->SetLinearYLimit(LCM_Locked, 0.f);
+	PhysicsConstraint->SetLinearZLimit(LCM_Locked, 0.f);
+	PhysicsConstraint->SetAngularSwing1Limit(ACM_Locked, 0.f);
+	PhysicsConstraint->SetAngularSwing2Limit(ACM_Locked, 0.f);
+	PhysicsConstraint->SetAngularTwistLimit(ACM_Locked, 0.f);
+	UE_LOG(LogTemp, Warning, TEXT("Physical Constraints set"));
 }
 void ADrone::SetTemporarySpeed(float Multiplier, float Duration)
 {
