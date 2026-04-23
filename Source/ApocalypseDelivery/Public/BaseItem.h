@@ -44,8 +44,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
     FString ItemDisplayName;
 
+    //ItemLabel 가시성이 안좋은 이유 중 획득 직전이 되어서야 Label이 보이는 문제도 있다고 생각해서 기존 900.0f에서 2000.0f로 수정.
     UPROPERTY(EditAnywhere, Category = "UI")
-    float DisplayDistance = 900.0f;
+    float DisplayDistance = 2000.0f;
 
     //이펙트
     UPROPERTY(EditAnywhere, Category = "Effects")
