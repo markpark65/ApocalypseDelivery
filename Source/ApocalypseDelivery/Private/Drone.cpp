@@ -7,6 +7,8 @@
 
 #include "ApocalypseHUD.h"
 #include "ApocalypseGameMode.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Engine/TextureRenderTarget2D.h"
 
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
@@ -57,6 +59,26 @@ ADrone::ADrone()
 
 	PhysicsConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("PhysicalConstComp"));
 	PhysicsConstraint->SetupAttachment(RootComponent);
+
+	// ── 미니맵 SceneCapture 설정 ──
+	MinimapCaptureComp = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("MinimapCaptureComp"));
+	MinimapCaptureComp->SetupAttachment(RootComponent);
+
+	// 드론 바로 위 2000cm에서 수직 하향 촬영
+	MinimapCaptureComp->SetRelativeLocation(FVector(0.f, 0.f, 2000.f));
+	MinimapCaptureComp->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
+
+	// ── 알파 채널을 무시하고 불투명하게 렌더링 ──
+	MinimapCaptureComp->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
+	MinimapCaptureComp->TextureTarget = MinimapRenderTarget;
+
+	// 직교 투영으로 왜곡 없는 탑다운 뷰
+	MinimapCaptureComp->ProjectionType = ECameraProjectionMode::Orthographic;
+	MinimapCaptureComp->OrthoWidth = MinimapOrthoWidth;
+
+	// 매 프레임 갱신 (성능이 걱정되면 false로 바꾸고 필요 시 CaptureScene() 수동 호출)
+	MinimapCaptureComp->bCaptureEveryFrame = true;
+	MinimapCaptureComp->bCaptureOnMovement = false;
 }
 
 void ADrone::BeginPlay()
@@ -78,6 +100,55 @@ void ADrone::BeginPlay()
 		ShieldMesh->SetVisibility(false);
 	}
 	BoxComp->OnComponentHit.AddDynamic(this, &ADrone::OnDroneHit);
+
+	// ── 미니맵 RenderTarget 런타임 생성 ──
+	MinimapRenderTarget = NewObject<UTextureRenderTarget2D>(this, TEXT("MinimapRenderTarget"));
+	MinimapRenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8;
+	MinimapRenderTarget->InitAutoFormat(MinimapTextureSize, MinimapTextureSize);
+	MinimapRenderTarget->UpdateResourceImmediate(true);
+
+	// SceneCapture에 타겟 연결
+	if (MinimapCaptureComp)
+	{
+		// 1. 드론의 회전을 따라가지 않도록 절대 회전 설정
+		MinimapCaptureComp->SetUsingAbsoluteRotation(true);
+
+		// 2. 카메라가 항상 땅바닥을 수직으로 내려다보도록 회전값 고정
+		// Pitch -90 (바닥), Yaw 0 (북쪽), Roll 0
+		MinimapCaptureComp->SetWorldRotation(FRotator(-90.0f, 0.0f, 0.0f));
+
+		MinimapCaptureComp->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
+		if (MinimapRenderTarget)
+		{
+			// 렌더링 결과에서 알파 채널이 배경을 뚫지 않도록 합니다.
+			MinimapCaptureComp->TextureTarget = MinimapRenderTarget;
+		}
+	}
+
+	// GameMode → HUD → MinimapWidget에 RenderTarget 전달
+	if (AApocalypseGameMode* MGM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		if (MGM->CurrentHUD)
+		{
+			MGM->CurrentHUD->InitializeMinimap(MinimapRenderTarget);
+		}
+	}
+
+	// ── 정적 텍스처 사용 시 초기화 흐름 ──
+	// 위 RenderTarget 흐름 대신 아래 코드를 사용
+	/*
+	if (StaticMinimapTexture)
+	{
+		if (AApocalypseGameMode* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
+		{
+			if (GM->CurrentHUD)
+			{
+				GM->CurrentHUD->InitializeMinimapWithTexture(StaticMinimapTexture);
+			}
+		}
+	}
+	*/
+	// ── 
 }
 void ADrone::Tick(float DeltaTime)
 {
@@ -97,7 +168,18 @@ void ADrone::Tick(float DeltaTime)
 		AddMovementInput(CurrentDirection);
 	}
 	
+	// ── 미니맵 관련 코드 ── 
+	if (MinimapCaptureComp)
+	{
+		// 카메라 위치를 드론 정수리 위로 고정 (Z 높이는 캡처 범위에 영향 없음 - Ortho 모드 기준)
+		FVector NewLoc = GetActorLocation();
+		NewLoc.Z += 5000.0f;
+		MinimapCaptureComp->SetWorldLocation(NewLoc);
 
+		// 카메라 회전은 항상 바닥을 향하도록 고정 (드론 회전 무시)
+		MinimapCaptureComp->SetWorldRotation(FRotator(-90.0f, 0.0f, 0.0f));
+	}
+	// ── 
 
 	//Rotate pawn
 	FRotator TargetRotation(0, 0, 0);
