@@ -94,10 +94,8 @@ void AChasingEnemy::ReturnBase()
 
 void AChasingEnemy::CheckTargetCondition()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Checking"));
 	TArray<AActor*> OverlappedActors;
 	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), BasePosition, SearchRange, TArray<TEnumAsByte<EObjectTypeQuery>>(), ADrone::StaticClass(), TArray<AActor*>{ this }, OverlappedActors);
-	UE_LOG(LogTemp, Warning, TEXT("Actors in the area - %d"), OverlappedActors.Num());
 	DrawDebugSphere(GetWorld(), BasePosition, SearchRange, 32, FColor::Cyan, false, DetectionInterval);
 	for (AActor* Actor : OverlappedActors) {
 		ADrone* Drone = Cast<ADrone>(Actor);
@@ -110,22 +108,7 @@ void AChasingEnemy::CheckTargetCondition()
 
 		DrawDebugLine(GetWorld(), GetActorLocation(), Drone->GetActorLocation(), FColor::Red, false, DetectionInterval);
 		bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, GetActorLocation(),Drone->GetActorLocation(),ECC_Pawn, TraceParams);
-		if (bHit) {
-			UE_LOG(LogTemp, Warning, TEXT("Hit Success!"));
-		}
-		else {
-			UE_LOG(LogTemp, Warning, TEXT("Hit failed!"));
-			return;
-		}
-		if (IsValid(Hit.GetActor())) {
-			UE_LOG(LogTemp, Warning, TEXT("Found Actor: %s"), *(Hit.GetActor()->GetName()));
-		}
-		else {
-			UE_LOG(LogTemp, Warning, TEXT("Found Actor not valid!"));
-			return;
-		}
 		if (bHit && Hit.GetActor() == Drone) {
-			UE_LOG(LogTemp, Warning, TEXT("Found"));
 			TargetPlayer = Drone;
 			IsChasing = true;
 			return;

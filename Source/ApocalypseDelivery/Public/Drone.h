@@ -139,7 +139,7 @@ private:
     float CapsuleHalfHeight;
     bool bIsOnGround = false;
 
-    float OriginalSpeed;
+    
     */
     //조작 방해 아이템
     FTimerHandle ReverseTimerHandle;
@@ -151,7 +151,7 @@ private:
 
     // 효과 지속 시간 관리
     FTimerHandle SpeedTimerHandle;
-    float SpeedMultiplier;
+    float OriginalSpeed;
     FTimerHandle DeliveryBlockTimerHandle;
 
     AApocalypseGameMode* GM;
