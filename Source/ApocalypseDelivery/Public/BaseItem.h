@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "ADInteractable.h"
-#include "InteractableEffect.h"
 
 #include "Components/WidgetComponent.h"
 #include "Runtime/UMG/Public/Blueprint/UserWidget.h"
