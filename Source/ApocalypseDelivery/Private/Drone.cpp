@@ -69,7 +69,7 @@ void ADrone::BeginPlay()
 	CurrentBattery = MaxBattery;
 	IsMoving = false;
 	DesiredDirection = { 0,0,0 };
-	SpeedMultiplier = 1.0;
+	OriginalSpeed = MovementComp->MaxSpeed;
 	GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode());
 
 	// 쉴드 초기 상태 설정
@@ -87,7 +87,7 @@ void ADrone::Tick(float DeltaTime)
 	if (GM->IsTimerActive())
 	{
 		//Calculate velocity and apply to the movement
-		CurrentDirection = FMath::VInterpTo(CurrentDirection, DesiredDirection * SpeedMultiplier, DeltaTime, MovementLerpRate);
+		CurrentDirection = FMath::VInterpTo(CurrentDirection, DesiredDirection, DeltaTime, MovementLerpRate);
 		CurrentBattery -= CurrentDirection.Length() * DeltaTime;
 		if (CurrentBattery <= 0)
 		{
@@ -157,6 +157,7 @@ void ADrone::BeginMove(const FInputActionValue& Value)
 		Direction += FVector(0, 0, Input.Z);
 	}
 	DesiredDirection = Direction.GetSafeNormal();
+	
 }
 void ADrone::EndMove(const FInputActionValue& Value)
 {
@@ -236,7 +237,10 @@ void ADrone::Pickup(const FInputActionValue& Value)
 void ADrone::SetTemporarySpeed(float Multiplier, float Duration)
 {
 	//MoveSpeed = OriginalSpeed * Multiplier;
-	SpeedMultiplier = Multiplier;
+	if (GetWorld()->GetTimerManager().IsTimerActive(SpeedTimerHandle)) {
+		GetWorld()->GetTimerManager().ClearTimer(SpeedTimerHandle);
+	}
+	MovementComp->MaxSpeed = OriginalSpeed * Multiplier;
 	GetWorldTimerManager().SetTimer(SpeedTimerHandle, this, &ADrone::ResetSpeed, Duration, false);
 	UE_LOG(LogTemp, Warning, TEXT("Speed Changed! Multiplier: %f"), Multiplier);
 }
@@ -244,7 +248,7 @@ void ADrone::SetTemporarySpeed(float Multiplier, float Duration)
 void ADrone::ResetSpeed()
 {
 	//MoveSpeed = OriginalSpeed;
-	SpeedMultiplier = 1.0;
+	MovementComp->MaxSpeed = OriginalSpeed;
 	UE_LOG(LogTemp, Warning, TEXT("Speed Restored."));
 }
 
