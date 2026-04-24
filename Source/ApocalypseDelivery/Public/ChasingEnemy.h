@@ -3,13 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ADInteractable.h"
+
 #include "GameFramework/Pawn.h"
 #include "ChasingEnemy.generated.h"
 
 class USphereComponent;
+class ADrone;
 class UFloatingPawnMovement;
 UCLASS()
-class APOCALYPSEDELIVERY_API AChasingEnemy : public APawn
+class APOCALYPSEDELIVERY_API AChasingEnemy : public APawn, public IADInteractable
 {
 	GENERATED_BODY()
 
@@ -65,8 +68,25 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = Crow)
 	void SetBasePosition();
 
+	//Collision Effects
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	class UParticleSystem* OverlapParticle;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	class USoundBase* OverlapSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	FString PickupMessage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	TSubclassOf<class UUserWidget> ItemMessageWidgetClass;
 
-	UFUNCTION()
-	void OnCollision(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	void PlayOverlapEffects();
+
+	void ShowPickupUI(ADrone* Drone);
+
+	UFUNCTION(BlueprintNativeEvent)
+	void ApplyEffect(ADrone* Drone);
+	virtual void ApplyEffect_Implementation(ADrone* Drone);
+	virtual FName GetItemType() const {
+		return FName("");
+	}
 
 };
