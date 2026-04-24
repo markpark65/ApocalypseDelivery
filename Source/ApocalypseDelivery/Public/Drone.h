@@ -21,15 +21,18 @@ public:
     bool bHasShield = false;
 
     //아이템 효과 적용 함수
+    UFUNCTION(BlueprintCallable)
     void SetTemporarySpeed(float Multiplier, float Duration);
     void SetShield(bool bEnable);
 
     //조작 전환 아이템
     bool bIsReverseControl = false;
+    UFUNCTION(BlueprintCallable)
     void SetReverseControl(float Duration);
 
     //화면 고정 아이템
     bool bIsLookFrozen = false;
+    UFUNCTION(BlueprintCallable)
     void SetLookFreeze(float Duration);
 
     // 모든 상태 이상 초기화
@@ -98,8 +101,6 @@ protected:
     void BeginMove(const FInputActionValue& Value);
     void EndMove(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
-    //void UpDown(const FInputActionValue& Value);
-    //void Roll(const FInputActionValue& Value);
     void BeginRolling(const FInputActionValue& Value);
     void EndRolling(const FInputActionValue& Value);
     void Pickup(const FInputActionValue& Value);
@@ -150,6 +151,8 @@ private:
 
     // 효과 지속 시간 관리
     FTimerHandle SpeedTimerHandle;
+    float SpeedMultiplier;
     FTimerHandle DeliveryBlockTimerHandle;
+
     AApocalypseGameMode* GM;
 };

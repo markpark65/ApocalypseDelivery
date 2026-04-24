@@ -7,8 +7,10 @@
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "Components/SphereComponent.h"
 
+#include "ItemMessageWidget.h"
 #include "Drone.h"
 
 // Sets default values
@@ -35,7 +37,7 @@ void AChasingEnemy::BeginPlay()
 	TargetPlayer = nullptr;
 
 	GetWorld()->GetTimerManager().SetTimer(DetectionTimer, this, &AChasingEnemy::CheckTargetCondition, DetectionInterval, true);
-	SphereComp->OnComponentHit.AddDynamic(this, &AChasingEnemy::OnCollision);
+	//SphereComp->OnComponentHit.AddDynamic(this, &AChasingEnemy::OnCollision);
 }
 
 // Called every frame
@@ -140,6 +142,7 @@ void AChasingEnemy::SetBasePosition()
 	BasePosition = GetActorLocation();
 }
 
+/*
 void AChasingEnemy::OnCollision(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) {
 	UE_LOG(LogTemp, Warning, TEXT("Enemy Collided!"));
 	if (OtherActor->IsA(ADrone::StaticClass())) {
@@ -147,5 +150,43 @@ void AChasingEnemy::OnCollision(UPrimitiveComponent* HitComp, AActor* OtherActor
 		Cast<ADrone>(OtherActor)->SetReverseControl(10.0f);
 	}
 	Destroy();
+}*/
+
+void AChasingEnemy::PlayOverlapEffects() {
+		if (OverlapParticle) UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OverlapParticle, GetActorLocation());
+		if (OverlapSound) UGameplayStatics::PlaySoundAtLocation(this, OverlapSound, GetActorLocation());
 }
 
+void AChasingEnemy::ShowPickupUI(ADrone* Drone) {
+	// 드론이 없거나, 위젯 클래스가 설정되지 않았거나, 메시지가 비어있으면 실행하지 않음
+	if (!Drone || !ItemMessageWidgetClass || PickupMessage.IsEmpty()) return;
+
+	APlayerController* PC = Cast<APlayerController>(Drone->GetController());
+	if (PC)
+	{
+		// 위젯 생성
+		UUserWidget* RawWidget = CreateWidget<UUserWidget>(PC, ItemMessageWidgetClass);
+		UItemMessageWidget* ItemWidget = Cast<UItemMessageWidget>(RawWidget);
+
+		if (ItemWidget)
+		{
+			// 메시지 설정 및 화면에 추가
+			ItemWidget->SetMessage(PickupMessage);
+			ItemWidget->AddToViewport();
+
+			UE_LOG(LogTemp, Warning, TEXT("ItemCollided!"));
+			// 2초 뒤에 위젯을 제거하는 타이머 설정
+			FTimerHandle TimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(TimerHandle, [ItemWidget]() {
+				if (ItemWidget) ItemWidget->RemoveFromParent();
+				}, 2.0f, false);
+		}
+	}
+}
+
+void AChasingEnemy::ApplyEffect_Implementation(class ADrone* Drone) {
+	//Drone->SetReverseControl(10.0f);
+	PlayOverlapEffects();
+	ShowPickupUI(Drone);
+	Destroy();
+}
