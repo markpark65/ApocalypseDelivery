@@ -18,8 +18,4 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	class UStaticMeshComponent* MeshComp;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	class UBoxComponent* CollisionComp;
-
 };

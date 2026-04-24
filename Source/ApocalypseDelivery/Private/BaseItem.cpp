@@ -84,6 +84,7 @@ void ABaseItem::ShowPickupUI(ADrone* Drone)
             ItemWidget->SetMessage(PickupMessage);
             ItemWidget->AddToViewport();
 
+            UE_LOG(LogTemp, Warning, TEXT("ItemCollided!"));
             // 2초 뒤에 위젯을 제거하는 타이머 설정
             FTimerHandle TimerHandle;
             GetWorld()->GetTimerManager().SetTimer(TimerHandle, [ItemWidget]() {

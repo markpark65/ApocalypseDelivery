@@ -5,6 +5,10 @@
 #include "InputActionValue.h"
 #include "Drone.generated.h"
 
+class UFloatingPawnMovement;
+class AApocalypseGameMode;
+class UPhysicsConstraintComponent;
+
 UCLASS()
 class APOCALYPSEDELIVERY_API ADrone : public APawn
 {
@@ -17,15 +21,18 @@ public:
     bool bHasShield = false;
 
     //아이템 효과 적용 함수
+    UFUNCTION(BlueprintCallable)
     void SetTemporarySpeed(float Multiplier, float Duration);
     void SetShield(bool bEnable);
 
     //조작 전환 아이템
     bool bIsReverseControl = false;
+    UFUNCTION(BlueprintCallable)
     void SetReverseControl(float Duration);
 
     //화면 고정 아이템
     bool bIsLookFrozen = false;
+    UFUNCTION(BlueprintCallable)
     void SetLookFreeze(float Duration);
 
     // 모든 상태 이상 초기화
@@ -38,8 +45,8 @@ public:
     UPROPERTY(BlueprintReadWrite, Category = "Status")
     float CurrentBattery;
 
-    FORCEINLINE FVector GetCurrentVelocity() const { return CurrentVelocity; }
-    FORCEINLINE AActor* GetAttachedPackage() const { return AttachedPackage; }
+    FORCEINLINE FVector GetCurrentVelocity() const { return GetVelocity(); }//return CurrentVelocity; }
+    FORCEINLINE AActor* GetAttachedPackage() const {return AttachedPackage; }
     FORCEINLINE void SetAttachedPackage(AActor* NewPackage) { AttachedPackage = NewPackage; }
 
     void ResetSpeed();
@@ -79,7 +86,7 @@ protected:
 
     // 컴포넌트
     UPROPERTY(VisibleAnywhere, Category = "Components")
-    class UCapsuleComponent* CapsuleComp;
+    class UBoxComponent* BoxComp;
 
     UPROPERTY(VisibleAnywhere, Category = "Components")
     class USkeletalMeshComponent* MeshComp;
@@ -93,6 +100,12 @@ protected:
     UPROPERTY(VisibleAnywhere, Category = "Components")
     class UStaticMeshComponent* ShieldMesh;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    class UFloatingPawnMovement* MovementComp;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    class UPhysicsConstraintComponent* PhysicsConstraint;
+
     // 비행/이동 변수
     UPROPERTY(EditAnywhere, Category = "Movement")
     float MoveSpeed = 600.f;
@@ -103,19 +116,30 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Movement")
     float UpDownSpeed = 800.0f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float VelocityTiltRatio;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float RotationLerpRate;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float MovementLerpRate;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float RollingSpeed;
 
     // 입력 처리 함수
-    void Move(const FInputActionValue& Value);
+    void BeginMove(const FInputActionValue& Value);
+    void EndMove(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
-    void UpDown(const FInputActionValue& Value);
-    void Roll(const FInputActionValue& Value);
+    void BeginRolling(const FInputActionValue& Value);
+    void EndRolling(const FInputActionValue& Value);
     void Pickup(const FInputActionValue& Value);
 
     // 배달
     UPROPERTY(VisibleAnywhere, Category = "Interaction")
     class USphereComponent* InteractionSphere; // 상자 감지 영역
-    UPROPERTY(BlueprintReadOnly, Category = "Interaction")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
     AActor* AttachedPackage;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+    float HoldingDistance;
 
     //충돌
     UFUNCTION()
@@ -124,27 +148,27 @@ protected:
     virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
     virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
 
-    UPROPERTY(EditAnywhere, Category = "Movement")
-    float Acceleration = 1500.f;
-    UPROPERTY(EditAnywhere, Category = "Movement")
-    float Friction = 2.0f;
-    FVector CurrentVelocity = FVector::ZeroVector;
-
     //캐릭터 죽으면 바로 종료 UI 문제
     void DelayedGameOver();
     FTimerHandle GameOverTimerHandle;
 
 private:
     FVector MovementInput = FVector::ZeroVector;
-    FRotator RotationInput = FRotator::ZeroRotator;
+    //FRotator RotationInput = FRotator::ZeroRotator;
+    bool IsMoving;
+    FVector DesiredDirection;
+    FVector CurrentDirection;
+    bool IsRolling;
+    bool CanMove;
 
+    /*
     // 충돌 및 상태 관리를 위한 변수 유지
     float VerticalVelocity = 0.0f;
     float CapsuleHalfHeight;
     bool bIsOnGround = false;
 
-    float OriginalSpeed;
-
+    
+    */
     //조작 방해 아이템
     FTimerHandle ReverseTimerHandle;
     void ResetReverseControl();
@@ -155,5 +179,8 @@ private:
 
     // 효과 지속 시간 관리
     FTimerHandle SpeedTimerHandle;
+    float OriginalSpeed;
     FTimerHandle DeliveryBlockTimerHandle;
+
+    AApocalypseGameMode* GM;
 };
