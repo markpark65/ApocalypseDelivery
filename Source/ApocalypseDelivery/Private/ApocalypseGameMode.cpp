@@ -1,10 +1,13 @@
 ﻿#include "ApocalypseGameMode.h"
+#include "ApocalypseGameStateBase.h"
 #include "MeteorSpawner.h"
 #include "Drone.h"
 #include "PackageSpawner.h"
 #include "DeliveryPlatform.h"
 #include "ApocalypseHUD.h"
 #include "ItemSpawner.h"
+
+
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/PlayerStart.h"
 #include "Components/AudioComponent.h"
@@ -91,6 +94,10 @@ void AApocalypseGameMode::StartQuest()
     {
         CurrentTargetPlatform->SetIsTarget(true);
         UE_LOG(LogTemp, Warning, TEXT("New Target Platform Assigned!"));
+    }
+    AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
+    if (IsValid(GS)) {
+        GS->SetPlaying();
     }
 }
 void AApocalypseGameMode::Tick(float DeltaTime)

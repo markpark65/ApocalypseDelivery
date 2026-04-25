@@ -1,13 +1,12 @@
 ﻿#include "Drone.h"
 #include "ApocalypseDroneController.h"
 #include "ADInteractable.h"
+#include "ApocalypseHUD.h"
+#include "ApocalypseGameMode.h"
+#include "ApocalypseGameStateBase.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-
-#include "ApocalypseHUD.h"
-#include "ApocalypseGameMode.h"
-
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/BoxComponent.h"
@@ -282,6 +281,7 @@ void ADrone::SetLookFreeze(float Duration)
 
 void ADrone::ResetLookFreeze() { bIsLookFrozen = false; }
 
+
 //디버프 제거
 void ADrone::ClearAllDebuffs()
 {
@@ -374,6 +374,11 @@ void ADrone::HandleGameOver()
 			Mesh->SetSimulatePhysics(true);
 	}
 	GetWorldTimerManager().SetTimer(GameOverTimerHandle, this, &ADrone::DelayedGameOver, 2.0f, false);
+
+	AApocalypseGameStateBase* GS = GetWorld()->GetGameState<AApocalypseGameStateBase>();
+	if (IsValid(GS)) {
+		GS->SetNotPlaying();
+	}
 }
 void ADrone::DelayedGameOver()
 {
