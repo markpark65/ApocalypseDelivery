@@ -278,6 +278,13 @@ void AApocalypseGameMode::UpdateMinimapMarkers()
 void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
 {
     bIsTimerActive = false;
+    //기록 저장 코드
+    AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
+    if (IsValid(GS)) 
+    {
+        GS->SetNotPlaying();
+    }
+    //------------
     DeliveredCount++;
     CurrentWave++;
 
@@ -406,6 +413,13 @@ void AApocalypseGameMode::GameOver()
 
 void AApocalypseGameMode::EndGame(bool bIsVictory)
 {
+    //기록 저장 코드
+    AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
+    if (IsValid(GS))
+    {
+        GS->SetNotPlaying();
+    }
+    //------------
     UGameplayStatics::SetGamePaused(GetWorld(), true);
     if (BGMComponent)
     {

@@ -9,6 +9,22 @@ class UFloatingPawnMovement;
 class AApocalypseGameMode;
 class UPhysicsConstraintComponent;
 
+// UI로 넘겨줄 상태변화 데이터 구조체 선언
+USTRUCT(BlueprintType)
+struct FEffectUIStatus
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category = "UI")
+    FString EffectName;       // 텍스트에 띄울 효과 이름
+
+    UPROPERTY(BlueprintReadOnly, Category = "UI")
+    float TimeRemaining;      // 남은 시간 (초)
+
+    UPROPERTY(BlueprintReadOnly, Category = "UI")
+    float ProgressRatio;      // 프로그레스 바에 넣을 비율 (0.0 ~ 1.0)
+};
+
 UCLASS()
 class APOCALYPSEDELIVERY_API ADrone : public APawn
 {
@@ -63,7 +79,9 @@ public:
     void ResetSpeed();
     void HandleGameOver();
 
-
+    //UI 위젯에서 상태변화 블루프린트 노드로 호출할 함수
+    UFUNCTION(BlueprintPure, Category = "Status|UI")
+    TArray<FEffectUIStatus> GetActiveEffectsStatus() const;
      
     //탑다운 뷰를 그대로 미니맵에 적용
     
@@ -200,4 +218,12 @@ private:
     void ResetGravited();
 
     AApocalypseGameMode* GM;
+
+    //위젯에 표시할 값 저장
+    float SpeedEffectMaxDuration;
+    float ControlEffectMaxDuration;
+    float LookFreezeMaxDuration;
+    float GravityMaxDuration;
+    UPROPERTY()
+    FString SpeedEffectName;
 };
