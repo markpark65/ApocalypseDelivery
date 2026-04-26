@@ -12,7 +12,8 @@ AReverseControlItem::AReverseControlItem()
 
 void AReverseControlItem::ApplyEffect(ADrone* Drone)
 {
-	Drone->SetReverseControl(10.0f);
+	//Drone->SetReverseControl(10.0f);
+	Drone->SetControlMultiplier(-1, 10.f);
 	ShowPickupUI(Drone);
 	PlayOverlapEffects();
 	Super::ApplyEffect(Drone);

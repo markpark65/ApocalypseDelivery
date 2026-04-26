@@ -168,6 +168,7 @@ void AChasingEnemy::ShowPickupUI(ADrone* Drone) {
 
 void AChasingEnemy::ApplyEffect_Implementation(class ADrone* Drone) {
 	//Drone->SetReverseControl(10.0f);
+	Drone->ApplyImpulseVelocity(GetVelocity());
 	PlayOverlapEffects();
 	ShowPickupUI(Drone);
 	Destroy();
