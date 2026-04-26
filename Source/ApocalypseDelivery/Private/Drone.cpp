@@ -93,6 +93,7 @@ void ADrone::BeginPlay()
 
 	CurrentBattery = MaxBattery;
 	IsMoving = false;
+	ControlMultiplier = 1.0f;
 	DesiredDirection = { 0,0,0 };
 	OriginalSpeed = MovementComp->MaxSpeed;
 	GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode());
@@ -205,7 +206,7 @@ void ADrone::Tick(float DeltaTime)
 	else {
 		TargetRotation.Roll = GetActorRotation().Roll;
 	}
-	SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, RotationLerpRate));
+	SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation * ControlMultiplier, DeltaTime, RotationLerpRate));
 }
 
 void ADrone::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -230,7 +231,7 @@ void ADrone::BeginMove(const FInputActionValue& Value)
 	if (!Controller) return;
 	IsMoving = true;
 	//Set desired movement direction to unit vector of local coordinate
-	FVector Input = Value.Get<FVector>() * (bIsReverseControl ? -1 : 1);
+	FVector Input = Value.Get<FVector>() * ControlMultiplier;
 	FVector Direction(0.0);
 	if (!FMath::IsNearlyZero(Input.X)) {
 		Direction += CameraComp->GetForwardVector() * Input.X;
@@ -348,6 +349,13 @@ void ADrone::SetShield(bool bEnable)
 	UE_LOG(LogTemp, Warning, TEXT("Shield Status: %s"), bEnable ? TEXT("ON") : TEXT("OFF"));
 }
 
+void ADrone::SetControlMultiplier(float Muliplier, float Duration) {
+	ControlMultiplier = Muliplier;
+	GetWorldTimerManager().SetTimer(ControlTimerHandle, this, &ADrone::ResetControlMultiplier, Duration, false);
+	UE_LOG(LogTemp, Warning, TEXT("Control Changed! - %f"), Muliplier);
+}
+void ADrone::ResetControlMultiplier() { ControlMultiplier = 1.0f; }
+/*
 // 조장 방해 설정
 void ADrone::SetReverseControl(float Duration)
 {
@@ -355,7 +363,7 @@ void ADrone::SetReverseControl(float Duration)
 	GetWorldTimerManager().SetTimer(ReverseTimerHandle, this, &ADrone::ResetReverseControl, Duration, false);
 	UE_LOG(LogTemp, Warning, TEXT("Reverse Control Active!"));
 }
-void ADrone::ResetReverseControl() { bIsReverseControl = false; }
+void ADrone::ResetReverseControl() { bIsReverseControl = false; }*/
 
 //카메라 고정 설정
 void ADrone::SetLookFreeze(float Duration)
@@ -367,17 +375,37 @@ void ADrone::SetLookFreeze(float Duration)
 
 void ADrone::ResetLookFreeze() { bIsLookFrozen = false; }
 
+void ADrone::SetGravitated(float Duration)
+{
+	BoxComp->SetSimulatePhysics(true);
+	GetWorldTimerManager().SetTimer(GravityTimerHandle, this, &ADrone::ResetGravited, Duration, false);
+	UE_LOG(LogTemp, Warning, TEXT("Gravity on!"));
+}
+
+void ADrone::ResetGravited()
+{
+	BoxComp->SetSimulatePhysics(false);
+	UE_LOG(LogTemp, Warning, TEXT("Gravity off!"));
+}
+
 
 //디버프 제거
 void ADrone::ClearAllDebuffs()
 {
-	bIsReverseControl = false;
+	//bIsReverseControl = false;
+	ControlMultiplier = 1.0f;
 	bIsLookFrozen = false;
 
-	GetWorldTimerManager().ClearTimer(ReverseTimerHandle);
+	GetWorldTimerManager().ClearTimer(ControlTimerHandle);
 	GetWorldTimerManager().ClearTimer(LookFreezeTimerHandle);
 
 	UE_LOG(LogTemp, Warning, TEXT("All Debuffs Cleared!"));
+}
+
+void ADrone::ApplyImpulseVelocity(FVector Impulse)
+{
+	MovementComp->Velocity += Impulse;
+	CurrentDirection = FVector::Zero();
 }
 
 void ADrone::AddBattery(float Amount)

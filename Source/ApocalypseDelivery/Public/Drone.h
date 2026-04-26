@@ -26,14 +26,25 @@ public:
     void SetShield(bool bEnable);
 
     //조작 전환 아이템
-    bool bIsReverseControl = false;
+    /*bool bIsReverseControl = false;
     UFUNCTION(BlueprintCallable)
-    void SetReverseControl(float Duration);
+    void SetReverseControl(float Duration);*/
+    float ControlMultiplier;
+    UFUNCTION(BlueprintCallable)
+    void SetControlMultiplier(float Multiplier, float Duration);
 
     //화면 고정 아이템
     bool bIsLookFrozen = false;
     UFUNCTION(BlueprintCallable)
     void SetLookFreeze(float Duration);
+
+    //중력 효과
+    bool IsGravitated;
+    UFUNCTION(BlueprintCallable)
+    void SetGravitated(float Duration);
+
+    //순간 속도 적용
+    void ApplyImpulseVelocity(FVector Impulse);
 
     // 모든 상태 이상 초기화
     void ClearAllDebuffs();
@@ -170,8 +181,10 @@ private:
     
     */
     //조작 방해 아이템
-    FTimerHandle ReverseTimerHandle;
-    void ResetReverseControl();
+    //FTimerHandle ReverseTimerHandle;
+    //void ResetReverseControl();
+    FTimerHandle ControlTimerHandle;
+    void ResetControlMultiplier();
 
     //시야 고정 아이템
     FTimerHandle LookFreezeTimerHandle;
@@ -181,6 +194,10 @@ private:
     FTimerHandle SpeedTimerHandle;
     float OriginalSpeed;
     FTimerHandle DeliveryBlockTimerHandle;
+
+    //중력 효과
+    FTimerHandle GravityTimerHandle;
+    void ResetGravited();
 
     AApocalypseGameMode* GM;
 };
