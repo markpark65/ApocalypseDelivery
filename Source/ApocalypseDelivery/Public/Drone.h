@@ -24,7 +24,7 @@ public:
     UFUNCTION(BlueprintCallable)
     void SetTemporarySpeed(float Multiplier, float Duration);
     void SetShield(bool bEnable);
-
+    
     //조작 전환 아이템
     /*bool bIsReverseControl = false;
     UFUNCTION(BlueprintCallable)
@@ -46,8 +46,20 @@ public:
     //순간 속도 적용
     void ApplyImpulseVelocity(FVector Impulse);
 
+    //스케일 적용
+    UFUNCTION(BlueprintCallable)
+    void SetTemporalScale(float ScaleValue, float CameraDistanceRatio, float Duration);
+
+    //입력 딜레이 적용
+    UFUNCTION(BlueprintCallable)
+    void SetDelayedInput(float MovementDelayRatio, float RotationDelayRatio, float Duration);
+
     // 모든 상태 이상 초기화
     void ClearAllDebuffs();
+
+    //텔레포트 추가
+    UFUNCTION(BlueprintCallable)
+    void AddTeleport();
 
     // 배터리 회복
     void AddBattery(float Amount);
@@ -163,6 +175,11 @@ protected:
     void DelayedGameOver();
     FTimerHandle GameOverTimerHandle;
 
+    //텔레포트
+    bool HasTeleport;
+    FVector TeleportCoordinate;
+    void UseItem();
+
 private:
     FVector MovementInput = FVector::ZeroVector;
     //FRotator RotationInput = FRotator::ZeroRotator;
@@ -198,6 +215,17 @@ private:
     //중력 효과
     FTimerHandle GravityTimerHandle;
     void ResetGravited();
+
+    //스케일 효과
+    FTimerHandle ScaleTimerHandle;
+    float OriginalArmLength;
+    void ResetTemporalScale();
+
+    //입력 딜레이 효과
+    FTimerHandle DelayTimerHandle;
+    float OriginalMovementLerpRate;
+    float OriginalRotationLerpRate;
+    void ResetDelayedInput();
 
     AApocalypseGameMode* GM;
 };

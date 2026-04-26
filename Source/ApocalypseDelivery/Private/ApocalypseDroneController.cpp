@@ -5,12 +5,13 @@ AApocalypseDroneController::AApocalypseDroneController()
 	:InputMappingContext(nullptr)
 	, MoveAction(nullptr)
 	, LookAction(nullptr)
-	, UpDownAction(nullptr)
+	//, UpDownAction(nullptr)
 	, RollAction(nullptr)
 	, PickupAction(nullptr)
 {
-
+	
 }
+
 void AApocalypseDroneController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -25,4 +26,15 @@ void AApocalypseDroneController::BeginPlay()
 			}
 		}
 	}
+}
+
+
+void AApocalypseDroneController::SetCameraFade(float duration)
+{
+	PlayerCameraManager->StartCameraFade(0, 1, 1, FLinearColor::Black, true, true);
+	GetWorld()->GetTimerManager().SetTimer(FadeTimerHandle, this, &AApocalypseDroneController::ResetCameraFade, duration, false);
+}
+void AApocalypseDroneController::ResetCameraFade()
+{
+	PlayerCameraManager->StartCameraFade(1, 0,1, FLinearColor::Black, true, false);
 }

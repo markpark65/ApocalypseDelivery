@@ -50,6 +50,8 @@ protected:
 	float RotationThreshold;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Crow)
 	float RotationInterpRate;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Crow)
+	bool IsRepulsive;
 
 	FVector BasePosition;
 	AActor* TargetPlayer;
