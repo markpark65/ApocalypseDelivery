@@ -22,14 +22,14 @@ void ADeliveryPackage::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    if (GetActorLocation().Z < -500.0f)
+    /*if (GetActorLocation().Z < -500.0f)
     {
         if (AApocalypseGameMode* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
         {
             GM->EndGame(false);
         }
         Destroy();
-    }
+    }*/
 }
 
 
