@@ -27,8 +27,8 @@ protected:
     // 플랫폼 외형
     UPROPERTY(VisibleAnywhere, Category = "Components")
     class UStaticMeshComponent* PlatformMesh;
-    UPROPERTY(VisibleAnywhere, Category = "Components")
-    UStaticMeshComponent* TargetIndicatorMesh;
+    //UPROPERTY(VisibleAnywhere, Category = "Components")
+    //UStaticMeshComponent* TargetIndicatorMesh;
 
     // 상자가 들어왔을 때 호출될 함수
     virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
