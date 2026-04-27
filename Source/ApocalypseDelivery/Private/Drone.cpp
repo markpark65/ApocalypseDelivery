@@ -413,6 +413,9 @@ void ADrone::ResetGravited()
 }
 
 void ADrone::SetTemporalScale(float ScaleValue, float CameraDistanceRatio, float Duration) {
+	//위젯에 표시할 최댓값 저장
+	ScaleMaxDuration = Duration;
+
 	SpringArmComp->TargetArmLength = OriginalArmLength * CameraDistanceRatio;
 	SetActorScale3D(FVector(ScaleValue));
 	GetWorldTimerManager().SetTimer(ScaleTimerHandle, this, &ADrone::ResetTemporalScale, Duration, false);
@@ -427,6 +430,9 @@ void ADrone::ResetTemporalScale() {
 
 void ADrone::SetDelayedInput(float MovementDelayRatio, float RotationDelayRatio, float Duration)
 {
+	//위젯에 표시할 최댓값 저장
+	DelayMaxDuration = Duration;
+
 	UE_LOG(LogTemp, Warning, TEXT("LerpRate Delayed: Movement-%f, Rotation %f"), MovementDelayRatio, RotationDelayRatio);
 	MovementLerpRate *= MovementDelayRatio;
 	RotationLerpRate *= RotationDelayRatio;
@@ -625,8 +631,53 @@ TArray<FEffectUIStatus> ADrone::GetActiveEffectsStatus() const
 		ActiveEffects.Add(Status);
 	}
 
+	// 5. 스케일 조정 효과 체크
+	if (TimerManager.IsTimerActive(ScaleTimerHandle))
+	{
+		FEffectUIStatus Status;
+		Status.EffectName = TEXT("Shirinked");
+		Status.TimeRemaining = TimerManager.GetTimerRemaining(ScaleTimerHandle);
+		Status.ProgressRatio = Status.TimeRemaining / ScaleMaxDuration;
+		ActiveEffects.Add(Status);
+	}
+
+	// 6. 입력 지연 효과 체크
+	if (TimerManager.IsTimerActive(DelayTimerHandle))
+	{
+		FEffectUIStatus Status;
+		Status.EffectName = TEXT("Input Delayed");
+		Status.TimeRemaining = TimerManager.GetTimerRemaining(DelayTimerHandle);
+		Status.ProgressRatio = Status.TimeRemaining / DelayMaxDuration;
+		ActiveEffects.Add(Status);
+	}
+
 	//새로운 상태변화 효과 구현 시 Drone에 로직 추가하고, 이 아래에 같은 구조로 호출할 함수/변수명만 변경하면 됩니다.
 
-
+	// BP에서 등록한 커스텀 효과들 자동 순회
+	for (auto& It : CustomEffectsMap)
+	{
+		if (TimerManager.IsTimerActive(It.Value.TimerHandle))
+		{
+			FEffectUIStatus Status;
+			Status.EffectName = It.Key;
+			Status.TimeRemaining = TimerManager.GetTimerRemaining(It.Value.TimerHandle);
+			Status.ProgressRatio = Status.TimeRemaining / It.Value.MaxDuration;
+			ActiveEffects.Add(Status);
+		}
+	}
 	return ActiveEffects;
+}
+
+// BP에서만 만든 새로운 효과를 UI에 등록할 때 호출할 함수
+void ADrone::RegisterCustomEffect(FString EffectName, float Duration)
+{
+	if (Duration <= 0.0f) return;
+
+	FCustomEffectData& Data = CustomEffectsMap.FindOrAdd(EffectName);
+	Data.MaxDuration = Duration;
+
+	// 기존 타이머가 있다면 초기화 후 재설정
+	GetWorld()->GetTimerManager().SetTimer(Data.TimerHandle, [this, EffectName]() {
+		CustomEffectsMap.Remove(EffectName);
+		}, Duration, false);
 }

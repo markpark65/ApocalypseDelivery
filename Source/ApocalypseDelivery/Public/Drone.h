@@ -24,6 +24,18 @@ struct FEffectUIStatus
     UPROPERTY(BlueprintReadOnly, Category = "UI")
     float ProgressRatio;      // 프로그레스 바에 넣을 비율 (0.0 ~ 1.0)
 };
+// BP에서만 구현한 버프/디버프를 위한 부분
+USTRUCT(BlueprintType)
+struct FCustomEffectData
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadWrite, Category = "CustomEffect")
+    float MaxDuration;
+
+    UPROPERTY(BlueprintReadWrite, Category = "CustomEffect")
+    FTimerHandle TimerHandle;
+};
 
 UCLASS()
 class APOCALYPSEDELIVERY_API ADrone : public APawn
@@ -94,6 +106,9 @@ public:
     //UI 위젯에서 상태변화 블루프린트 노드로 호출할 함수
     UFUNCTION(BlueprintPure, Category = "Status|UI")
     TArray<FEffectUIStatus> GetActiveEffectsStatus() const;
+    // BP에서만 만든 새로운 효과를 UI에 등록할 때 호출할 함수
+    UFUNCTION(BlueprintCallable, Category = "Status|UI")
+    void RegisterCustomEffect(FString EffectName, float Duration);
      
     //탑다운 뷰를 그대로 미니맵에 적용
     
@@ -252,6 +267,11 @@ private:
     float ControlEffectMaxDuration;
     float LookFreezeMaxDuration;
     float GravityMaxDuration;
+    float ScaleMaxDuration;
+    float DelayMaxDuration;
     UPROPERTY()
     FString SpeedEffectName;
+    // BP에서만 구현한 버프/디버프를 위한 부분
+    UPROPERTY()
+    TMap<FString, FCustomEffectData> CustomEffectsMap;
 };
