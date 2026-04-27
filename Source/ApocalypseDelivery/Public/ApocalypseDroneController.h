@@ -19,24 +19,34 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputMappingContext* InputMappingContext;
 
-	// ±‚¡∏ æ◊º«
+	// Í∏∞Ï°¥ Ïï°ÏÖò
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* MoveAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* LookAction;
 
-	// √ﬂ∞° æ◊º« (∫Ò«‡øÎ)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* UpDownAction;
+	// Ï∂îÍ∞Ä Ïï°ÏÖò (ÎπÑÌñâÏö©)
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	//UInputAction* UpDownAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* RollAction;
 
-	// ≈√πË µÈ±‚
+	// ÌÉùÎ∞∞ Îì§Í∏∞
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* PickupAction;
 
+	// ÌÉùÎ∞∞ Îì§Í∏∞
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* IA_Interact;
+
+	UFUNCTION(Blueprintcallable)
+	void SetCameraFade(float duration);
+
 protected:
 	virtual void BeginPlay() override;
+
+	FTimerHandle FadeTimerHandle;
+	void ResetCameraFade();
 };

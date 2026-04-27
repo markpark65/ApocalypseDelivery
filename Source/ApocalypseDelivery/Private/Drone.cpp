@@ -94,8 +94,13 @@ void ADrone::BeginPlay()
 	CurrentBattery = MaxBattery;
 	IsMoving = false;
 	ControlMultiplier = 1.0f;
-	DesiredDirection = { 0,0,0 };
+	OriginalArmLength = SpringArmComp->TargetArmLength;
+	DesiredDirection = FVector::ZeroVector;
+	HasTeleport = false;
+	TeleportCoordinate = FVector::ZeroVector;
 	OriginalSpeed = MovementComp->MaxSpeed;
+	OriginalMovementLerpRate = MovementLerpRate;
+	OriginalRotationLerpRate = RotationLerpRate;
 	GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode());
 
 	// 쉴드 초기 상태 설정
@@ -206,7 +211,7 @@ void ADrone::Tick(float DeltaTime)
 	else {
 		TargetRotation.Roll = GetActorRotation().Roll;
 	}
-	SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation * ControlMultiplier, DeltaTime, RotationLerpRate));
+	SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, RotationLerpRate));
 }
 
 void ADrone::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -222,7 +227,8 @@ void ADrone::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 			//EnhancedInput->BindAction(PC->UpDownAction, ETriggerEvent::Triggered, this, &ADrone::UpDown);
 			EnhancedInput->BindAction(PC->RollAction, ETriggerEvent::Triggered, this, &ADrone::BeginRolling);
 			EnhancedInput->BindAction(PC->RollAction, ETriggerEvent::Completed, this, &ADrone::EndRolling);
-			EnhancedInput->BindAction(PC->PickupAction, ETriggerEvent::Triggered, this, &ADrone::Pickup);
+			EnhancedInput->BindAction(PC->PickupAction, ETriggerEvent::Started, this, &ADrone::Pickup);
+			EnhancedInput->BindAction(PC->IA_Interact, ETriggerEvent::Started, this, &ADrone::UseItem);
 		}
 	}
 }
@@ -256,7 +262,7 @@ void ADrone::Look(const FInputActionValue& Value)
 {
 	if (!Controller) return;
 	//Rotate view using mouse input
-	FVector2D Input = Value.Get<FVector2D>();
+	FVector2D Input = Value.Get<FVector2D>() * ControlMultiplier;
 	if (!FMath::IsNearlyZero(Input.X)) {
 		AddControllerYawInput(Input.X);
 	}
@@ -322,6 +328,17 @@ void ADrone::Pickup(const FInputActionValue& Value)
 }
 void ADrone::SetTemporarySpeed(float Multiplier, float Duration)
 {
+	//위젯에 표시할 최댓값 저장
+	SpeedEffectMaxDuration = Duration;
+	if (Multiplier > 1.0f)
+	{
+		SpeedEffectName = TEXT("Boost");
+	}
+	if (Multiplier < 1.0f)
+	{
+		SpeedEffectName = TEXT("Slow");
+	}
+
 	//MoveSpeed = OriginalSpeed * Multiplier;
 	if (GetWorld()->GetTimerManager().IsTimerActive(SpeedTimerHandle)) {
 		GetWorld()->GetTimerManager().ClearTimer(SpeedTimerHandle);
@@ -350,6 +367,9 @@ void ADrone::SetShield(bool bEnable)
 }
 
 void ADrone::SetControlMultiplier(float Muliplier, float Duration) {
+	//위젯에 표시할 값 저장
+	ControlEffectMaxDuration = Duration;
+
 	ControlMultiplier = Muliplier;
 	GetWorldTimerManager().SetTimer(ControlTimerHandle, this, &ADrone::ResetControlMultiplier, Duration, false);
 	UE_LOG(LogTemp, Warning, TEXT("Control Changed! - %f"), Muliplier);
@@ -368,6 +388,8 @@ void ADrone::ResetReverseControl() { bIsReverseControl = false; }*/
 //카메라 고정 설정
 void ADrone::SetLookFreeze(float Duration)
 {
+	//위젯에 표시할 최댓값 저장
+	LookFreezeMaxDuration = Duration;
 	bIsLookFrozen = true;
 	GetWorldTimerManager().SetTimer(LookFreezeTimerHandle, this, &ADrone::ResetLookFreeze, Duration, false);
 	UE_LOG(LogTemp, Warning, TEXT("Camera Frozen!"));
@@ -377,6 +399,8 @@ void ADrone::ResetLookFreeze() { bIsLookFrozen = false; }
 
 void ADrone::SetGravitated(float Duration)
 {
+	//위젯에 표시할 최댓값 저장
+	GravityMaxDuration = Duration;
 	BoxComp->SetSimulatePhysics(true);
 	GetWorldTimerManager().SetTimer(GravityTimerHandle, this, &ADrone::ResetGravited, Duration, false);
 	UE_LOG(LogTemp, Warning, TEXT("Gravity on!"));
@@ -388,6 +412,33 @@ void ADrone::ResetGravited()
 	UE_LOG(LogTemp, Warning, TEXT("Gravity off!"));
 }
 
+void ADrone::SetTemporalScale(float ScaleValue, float CameraDistanceRatio, float Duration) {
+	SpringArmComp->TargetArmLength = OriginalArmLength * CameraDistanceRatio;
+	SetActorScale3D(FVector(ScaleValue));
+	GetWorldTimerManager().SetTimer(ScaleTimerHandle, this, &ADrone::ResetTemporalScale, Duration, false);
+	UE_LOG(LogTemp, Warning, TEXT("Scale Changed! - %f"), ScaleValue);
+}
+
+void ADrone::ResetTemporalScale() {
+	UE_LOG(LogTemp, Warning, TEXT("Scale restored"));
+	SetActorScale3D(FVector::OneVector);
+	SpringArmComp->TargetArmLength = OriginalArmLength;
+}
+
+void ADrone::SetDelayedInput(float MovementDelayRatio, float RotationDelayRatio, float Duration)
+{
+	UE_LOG(LogTemp, Warning, TEXT("LerpRate Delayed: Movement-%f, Rotation %f"), MovementDelayRatio, RotationDelayRatio);
+	MovementLerpRate *= MovementDelayRatio;
+	RotationLerpRate *= RotationDelayRatio;
+	GetWorldTimerManager().SetTimer(ScaleTimerHandle, this, &ADrone::ResetDelayedInput, Duration, false);
+}
+
+void ADrone::ResetDelayedInput()
+{
+	UE_LOG(LogTemp, Warning, TEXT("LerpRate restored - MovementLerpRate: %f, RotationLerpRate: %f"), OriginalMovementLerpRate, OriginalRotationLerpRate);
+	MovementLerpRate = OriginalMovementLerpRate;
+	RotationLerpRate = OriginalRotationLerpRate;
+}
 
 //디버프 제거
 void ADrone::ClearAllDebuffs()
@@ -400,6 +451,11 @@ void ADrone::ClearAllDebuffs()
 	GetWorldTimerManager().ClearTimer(LookFreezeTimerHandle);
 
 	UE_LOG(LogTemp, Warning, TEXT("All Debuffs Cleared!"));
+}
+
+void ADrone::AddTeleport()
+{
+	HasTeleport = true;
 }
 
 void ADrone::ApplyImpulseVelocity(FVector Impulse)
@@ -500,4 +556,77 @@ void ADrone::DelayedGameOver()
 	{
 		GM->EndGame(false);
 	}
+}
+
+void ADrone::UseItem()
+{
+	if (HasTeleport) {
+		if (TeleportCoordinate == FVector::ZeroVector) {
+			TeleportCoordinate = GetActorLocation();
+			UE_LOG(LogTemp, Warning, TEXT("TeleportCoordinate has set - %f %f %f"), TeleportCoordinate.X, TeleportCoordinate.Y, TeleportCoordinate.Z);
+		}
+		else {
+			SetActorLocation(TeleportCoordinate);
+			MovementComp->StopMovementImmediately();
+			CurrentDirection = FVector::ZeroVector;
+			HasTeleport = false;
+			TeleportCoordinate = FVector::ZeroVector;
+			UE_LOG(LogTemp, Warning, TEXT("Teleport Completed - %f %f %f"), TeleportCoordinate.X, TeleportCoordinate.Y, TeleportCoordinate.Z);
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("Cannot Use Teleport"));
+	}
+}
+
+//상태변화 Progress Bar 구현 로직
+TArray<FEffectUIStatus> ADrone::GetActiveEffectsStatus() const
+{
+	TArray<FEffectUIStatus> ActiveEffects;
+	FTimerManager& TimerManager = GetWorld()->GetTimerManager();
+
+	// 1. 속도 효과 체크
+	if (TimerManager.IsTimerActive(SpeedTimerHandle))
+	{
+		FEffectUIStatus Status;
+		Status.EffectName = SpeedEffectName;
+		Status.TimeRemaining = TimerManager.GetTimerRemaining(SpeedTimerHandle);
+		Status.ProgressRatio = Status.TimeRemaining / SpeedEffectMaxDuration;
+		ActiveEffects.Add(Status);
+	}
+
+	// 2. 조작 방해 효과 체크
+	if (TimerManager.IsTimerActive(ControlTimerHandle))
+	{
+		FEffectUIStatus Status;
+		Status.EffectName = TEXT("Control Reverse");
+		Status.TimeRemaining = TimerManager.GetTimerRemaining(ControlTimerHandle);
+		Status.ProgressRatio = Status.TimeRemaining / ControlEffectMaxDuration;
+		ActiveEffects.Add(Status);
+	}
+
+	// 3. 시야 고정 효과 체크
+	if (TimerManager.IsTimerActive(LookFreezeTimerHandle))
+	{
+		FEffectUIStatus Status;
+		Status.EffectName = TEXT("Look Freeze");
+		Status.TimeRemaining = TimerManager.GetTimerRemaining(LookFreezeTimerHandle);
+		Status.ProgressRatio = Status.TimeRemaining / LookFreezeMaxDuration;
+		ActiveEffects.Add(Status);
+	}
+
+	// 4. 중력 효과 체크
+	if (TimerManager.IsTimerActive(GravityTimerHandle))
+	{
+		FEffectUIStatus Status;
+		Status.EffectName = TEXT("Gravitied");
+		Status.TimeRemaining = TimerManager.GetTimerRemaining(GravityTimerHandle);
+		Status.ProgressRatio = Status.TimeRemaining / GravityMaxDuration;
+		ActiveEffects.Add(Status);
+	}
+
+	//새로운 상태변화 효과 구현 시 Drone에 로직 추가하고, 이 아래에 같은 구조로 호출할 함수/변수명만 변경하면 됩니다.
+
+
+	return ActiveEffects;
 }

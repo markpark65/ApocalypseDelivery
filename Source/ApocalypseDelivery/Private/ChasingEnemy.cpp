@@ -24,6 +24,8 @@ AChasingEnemy::AChasingEnemy()
 	MeshComp->SetupAttachment(RootComponent);
 	MovementComp = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComp"));
 	MovementComp->SetUpdatedComponent(SphereComp);
+
+	IsRepulsive = true;
 	
 }
 
@@ -168,7 +170,7 @@ void AChasingEnemy::ShowPickupUI(ADrone* Drone) {
 
 void AChasingEnemy::ApplyEffect_Implementation(class ADrone* Drone) {
 	//Drone->SetReverseControl(10.0f);
-	Drone->ApplyImpulseVelocity(GetVelocity());
+	if(IsRepulsive) Drone->ApplyImpulseVelocity(GetVelocity());
 	PlayOverlapEffects();
 	ShowPickupUI(Drone);
 	Destroy();

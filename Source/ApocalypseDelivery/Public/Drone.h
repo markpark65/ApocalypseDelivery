@@ -9,6 +9,22 @@ class UFloatingPawnMovement;
 class AApocalypseGameMode;
 class UPhysicsConstraintComponent;
 
+// UI로 넘겨줄 상태변화 데이터 구조체 선언
+USTRUCT(BlueprintType)
+struct FEffectUIStatus
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category = "UI")
+    FString EffectName;       // 텍스트에 띄울 효과 이름
+
+    UPROPERTY(BlueprintReadOnly, Category = "UI")
+    float TimeRemaining;      // 남은 시간 (초)
+
+    UPROPERTY(BlueprintReadOnly, Category = "UI")
+    float ProgressRatio;      // 프로그레스 바에 넣을 비율 (0.0 ~ 1.0)
+};
+
 UCLASS()
 class APOCALYPSEDELIVERY_API ADrone : public APawn
 {
@@ -24,7 +40,7 @@ public:
     UFUNCTION(BlueprintCallable)
     void SetTemporarySpeed(float Multiplier, float Duration);
     void SetShield(bool bEnable);
-
+    
     //조작 전환 아이템
     /*bool bIsReverseControl = false;
     UFUNCTION(BlueprintCallable)
@@ -46,8 +62,20 @@ public:
     //순간 속도 적용
     void ApplyImpulseVelocity(FVector Impulse);
 
+    //스케일 적용
+    UFUNCTION(BlueprintCallable)
+    void SetTemporalScale(float ScaleValue, float CameraDistanceRatio, float Duration);
+
+    //입력 딜레이 적용
+    UFUNCTION(BlueprintCallable)
+    void SetDelayedInput(float MovementDelayRatio, float RotationDelayRatio, float Duration);
+
     // 모든 상태 이상 초기화
     void ClearAllDebuffs();
+
+    //텔레포트 추가
+    UFUNCTION(BlueprintCallable)
+    void AddTeleport();
 
     // 배터리 회복
     void AddBattery(float Amount);
@@ -63,7 +91,9 @@ public:
     void ResetSpeed();
     void HandleGameOver();
 
-
+    //UI 위젯에서 상태변화 블루프린트 노드로 호출할 함수
+    UFUNCTION(BlueprintPure, Category = "Status|UI")
+    TArray<FEffectUIStatus> GetActiveEffectsStatus() const;
      
     //탑다운 뷰를 그대로 미니맵에 적용
     
@@ -163,6 +193,11 @@ protected:
     void DelayedGameOver();
     FTimerHandle GameOverTimerHandle;
 
+    //텔레포트
+    bool HasTeleport;
+    FVector TeleportCoordinate;
+    void UseItem();
+
 private:
     FVector MovementInput = FVector::ZeroVector;
     //FRotator RotationInput = FRotator::ZeroRotator;
@@ -199,5 +234,24 @@ private:
     FTimerHandle GravityTimerHandle;
     void ResetGravited();
 
+    //스케일 효과
+    FTimerHandle ScaleTimerHandle;
+    float OriginalArmLength;
+    void ResetTemporalScale();
+
+    //입력 딜레이 효과
+    FTimerHandle DelayTimerHandle;
+    float OriginalMovementLerpRate;
+    float OriginalRotationLerpRate;
+    void ResetDelayedInput();
+
     AApocalypseGameMode* GM;
+
+    //위젯에 표시할 값 저장
+    float SpeedEffectMaxDuration;
+    float ControlEffectMaxDuration;
+    float LookFreezeMaxDuration;
+    float GravityMaxDuration;
+    UPROPERTY()
+    FString SpeedEffectName;
 };
