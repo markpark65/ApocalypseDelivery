@@ -27,7 +27,7 @@ void AChargingPlatform::Tick(float DeltaTime)
     {
         if (ADrone* Drone = Cast<ADrone>(Actor))
         {
-            Drone->AddBattery(RecoverBattery * DeltaTime);
+            //Drone->AddBattery(RecoverBattery * DeltaTime);
         }
     }
 }

@@ -89,12 +89,13 @@ public:
     UFUNCTION(BlueprintCallable)
     void AddTeleport();
 
+    /*
     // 배터리 회복
     void AddBattery(float Amount);
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
     float MaxBattery = 100.0f;
     UPROPERTY(BlueprintReadWrite, Category = "Status")
-    float CurrentBattery;
+    float CurrentBattery;*/
 
     FORCEINLINE FVector GetCurrentVelocity() const { return GetVelocity(); }//return CurrentVelocity; }
     FORCEINLINE AActor* GetAttachedPackage() const {return AttachedPackage; }

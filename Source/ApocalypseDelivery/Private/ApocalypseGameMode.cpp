@@ -76,11 +76,11 @@ void AApocalypseGameMode::StartQuest()
         bIsTimerActive = true;
         UE_LOG(LogTemp, Warning, TEXT("Quest Started! Meteors Falling..."));
     }
-    AActor* FoundSpawner = UGameplayStatics::GetActorOfClass(GetWorld(), APackageSpawner::StaticClass());
+    /*AActor* FoundSpawner = UGameplayStatics::GetActorOfClass(GetWorld(), APackageSpawner::StaticClass());
     if (APackageSpawner* PSpawner = Cast<APackageSpawner>(FoundSpawner))
     {
         PSpawner->SpawnPackage();
-    }
+    }*/
 
     //스폰된 패키지를 즉시 미니맵 변수에 할당
     TArray<AActor*> FoundPackages;
@@ -93,6 +93,7 @@ void AApocalypseGameMode::StartQuest()
     CurrentTargetPlatform = GetRandomAvailablePlatform();
     CurrentPlatform = CurrentTargetPlatform; // 미니맵용 변수 재설정
 
+    /*
     TArray<AActor*> AllPlatforms;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADeliveryPlatform::StaticClass(), AllPlatforms);
     for (AActor* Actor : AllPlatforms)
@@ -113,7 +114,7 @@ void AApocalypseGameMode::StartQuest()
     {
         CurrentTargetPlatform->SetIsTarget(true);
         UE_LOG(LogTemp, Warning, TEXT("New Target Platform Assigned!"));
-    }
+    }*/
 
     // ── 미니맵 마커 관련 기능 ──
     CurrentPlatform = CurrentTargetPlatform;
@@ -179,11 +180,11 @@ void AApocalypseGameMode::Tick(float DeltaTime)
 
     if (PlayerDrone && CurrentHUD)
     {
-        float BatteryPct = PlayerDrone->CurrentBattery / PlayerDrone->MaxBattery;
+        //float BatteryPct = PlayerDrone->CurrentBattery / PlayerDrone->MaxBattery;
 
         float SpeedValue = PlayerDrone->GetCurrentVelocity().Size();
 
-        CurrentHUD->UpdateStats(BatteryPct, SpeedValue);
+        CurrentHUD->UpdateStats(1, SpeedValue);
 
         if (CurrentTargetPlatform)
         {
@@ -280,7 +281,7 @@ void AApocalypseGameMode::UpdateMinimapMarkers()
 
 void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
 {
-    bIsTimerActive = false;
+    //bIsTimerActive = false;
     //기록 저장 코드
     AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
     if (IsValid(GS)) 
@@ -317,16 +318,16 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
 
         return;
     }
-    if (PlayerDrone)
+    /*if (PlayerDrone)
     {
         PlayerDrone->AddBattery(PlayerDrone->MaxBattery);
-    }
+    }*/
     if (CurrentStage > MaxWavesPerStage) // 모든 스테이지 클리어 시
     {
         bIsTimerActive = false;
         EndGame(true);
     }
-
+    /*
     if (PlayerDrone)
     {
         AActor* PlayerStart = UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass());
@@ -339,7 +340,7 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
                 Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
             }
         }
-    }
+    }*/
 
     if(CurrentHUD)
     {

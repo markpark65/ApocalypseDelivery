@@ -4,6 +4,7 @@
 #include "ApocalypseHUD.h"
 #include "ApocalypseGameMode.h"
 #include "ApocalypseGameStateBase.h"
+#include "PackageSpawner.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -21,12 +22,13 @@
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Camera/CameraComponent.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 
 ADrone::ADrone()
 	: AttachedPackage(nullptr)
 	//, CapsuleHalfHeight(0.0f)
-	, CurrentBattery(0.0f)
+	//, CurrentBattery(0.0f)
 	//, OriginalSpeed(0.0f)
 	//, bIsOnGround(false)
 {
@@ -91,7 +93,7 @@ void ADrone::BeginPlay()
 	//CapsuleHalfHeight = CapsuleComp->GetScaledCapsuleHalfHeight();
 	//OriginalSpeed = MoveSpeed;
 
-	CurrentBattery = MaxBattery;
+	//CurrentBattery = MaxBattery;
 	IsMoving = false;
 	ControlMultiplier = 1.0f;
 	OriginalArmLength = SpringArmComp->TargetArmLength;
@@ -158,6 +160,20 @@ void ADrone::BeginPlay()
 	}
 	*/
 	// ── 
+	
+	//시작과 동시에 상자 보유.
+	AActor* FoundSpawner = UGameplayStatics::GetActorOfClass(GetWorld(), APackageSpawner::StaticClass());
+	if (APackageSpawner* PSpawner = Cast<APackageSpawner>(FoundSpawner))
+	{
+		PSpawner->SpawnPackage();
+	}
+	TArray<AActor*> Packages;
+	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Package"), Packages);
+	if (!Packages.IsEmpty()) {
+		UE_LOG(LogTemp, Warning, TEXT("Attaching Package box"));
+		Packages[0]->SetActorLocation(GetActorLocation() - GetActorUpVector() * HoldingDistance);
+		Pickup(FInputActionValue());
+	}
 }
 void ADrone::Tick(float DeltaTime)
 {
@@ -168,12 +184,12 @@ void ADrone::Tick(float DeltaTime)
 	{
 		//Calculate velocity and apply to the movement
 		CurrentDirection = FMath::VInterpTo(CurrentDirection, DesiredDirection, DeltaTime, MovementLerpRate);
-		CurrentBattery -= CurrentDirection.Length() * DeltaTime;
+		/*CurrentBattery -= CurrentDirection.Length() * DeltaTime;
 		if (CurrentBattery <= 0)
 		{
 			CurrentBattery = 0;
 			HandleGameOver();
-		}
+		}*/
 		AddMovementInput(CurrentDirection);
 	}
 	
@@ -227,7 +243,7 @@ void ADrone::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 			//EnhancedInput->BindAction(PC->UpDownAction, ETriggerEvent::Triggered, this, &ADrone::UpDown);
 			EnhancedInput->BindAction(PC->RollAction, ETriggerEvent::Triggered, this, &ADrone::BeginRolling);
 			EnhancedInput->BindAction(PC->RollAction, ETriggerEvent::Completed, this, &ADrone::EndRolling);
-			EnhancedInput->BindAction(PC->PickupAction, ETriggerEvent::Started, this, &ADrone::Pickup);
+			//EnhancedInput->BindAction(PC->PickupAction, ETriggerEvent::Started, this, &ADrone::Pickup);
 			EnhancedInput->BindAction(PC->IA_Interact, ETriggerEvent::Started, this, &ADrone::UseItem);
 		}
 	}
@@ -470,10 +486,11 @@ void ADrone::ApplyImpulseVelocity(FVector Impulse)
 	CurrentDirection = FVector::Zero();
 }
 
+/*
 void ADrone::AddBattery(float Amount)
 {
 	CurrentBattery = FMath::Clamp(CurrentBattery + Amount, 0.0f, MaxBattery);
-}
+}*/
 
 //운석 충돌 로직
 void ADrone::OnDroneHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
