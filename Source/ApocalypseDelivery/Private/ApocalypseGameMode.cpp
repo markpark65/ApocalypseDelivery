@@ -39,7 +39,7 @@ void AApocalypseGameMode::BeginPlay()
         CurrentHUD = CreateWidget<UApocalypseHUD>(GetWorld(), HUDWidgetClass);
         if (CurrentHUD)
         {
-            CurrentHUD->AddToViewport();
+            CurrentHUD->AddToViewport();//레벨 전환 시 startquest 활성
             // 초기값 설정
             CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, TargetDeliveries);
 
@@ -348,6 +348,8 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
         CurrentHUD->UpdateStageText(StageInfo);
         CurrentHUD->UpdateStats(1.0f, 0.0f);
         CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, TargetDeliveries);
+        StartQuest();
+        /*
         if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
         {
             PC->bShowMouseCursor = true;
@@ -359,13 +361,13 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
                 {
                     ButtonWidget->SetVisibility(ESlateVisibility::Visible);
                 }
-
                 InputMode.SetWidgetToFocus(CurrentHUD->TakeWidget());
                 InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
             }
             PC->SetInputMode(InputMode);
-            CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, TargetDeliveries);
+            CurrentHUD->UpdateStatus(CurrentStage, CurrentWave, DeliveredCount, TargetDeliveries);
         }
+        */
     }
 
     CurrentTimeLeft = TimeLimit;
