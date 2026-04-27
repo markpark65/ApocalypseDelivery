@@ -32,11 +32,11 @@ void UApocalypseHUD::OnStartQuestClicked()
     }
 }
 //스테이지 및 웨이브 관리
-void UApocalypseHUD::UpdateStatus(int32 Stage, int32 Wave, int32 Count, int32 Target)
+void UApocalypseHUD::UpdateStatus(int32 Stage, /*int32 Wave,*/ int32 Count, int32 Target)
 {
     if (StageText)
     {
-        FString StatusString = FString::Printf(TEXT("STAGE %d - %d"), Stage, Wave);
+        FString StatusString = FString::Printf(TEXT("STAGE %d"), Stage/*, Wave*/);
         StageText->SetText(FText::FromString(StatusString));
     }
 

@@ -60,7 +60,7 @@ public:
     void UpdateTimer(int32 Minutes, int32 Seconds);
     
     //스테이지, 배달 개수 체크
-    void UpdateStatus(int32 Stage, int32 Wave, int32 Count, int32 Target);
+    void UpdateStatus(int32 Stage, /*int32 Wave,*/ int32 Count, int32 Target);
     
     UFUNCTION(BlueprintImplementableEvent, Category = "UI")
     void UpdateDistance(float DistanceInMeters);

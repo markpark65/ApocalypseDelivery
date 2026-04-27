@@ -41,7 +41,7 @@ void AApocalypseGameMode::BeginPlay()
         {
             CurrentHUD->AddToViewport();
             // 초기값 설정
-            CurrentHUD->UpdateStatus(CurrentStage, CurrentWave, DeliveredCount, TargetDeliveries);
+            CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, TargetDeliveries);
 
             int32 Mins = FMath::FloorToInt(CurrentTimeLeft / 60.0f);
             int32 Secs = FMath::FloorToInt(CurrentTimeLeft) % 60;
@@ -133,8 +133,10 @@ void AApocalypseGameMode::StartQuest()
 void AApocalypseGameMode::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+    /*
     if (PlayerDrone)
     {
+
         float BatteryPct = PlayerDrone->CurrentBattery / PlayerDrone->MaxBattery;
         float SpeedValue = PlayerDrone->GetCurrentVelocity().Size();
 
@@ -153,6 +155,7 @@ void AApocalypseGameMode::Tick(float DeltaTime)
     {
         EndGame(false);
     }
+    */
     if (bIsTimerActive && CurrentTimeLeft > 0)
     {
         CurrentTimeLeft -= DeltaTime;
@@ -344,7 +347,7 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
         FString StageInfo = FString::Printf(TEXT("%d - %d"), CurrentStage, CurrentWave);
         CurrentHUD->UpdateStageText(StageInfo);
         CurrentHUD->UpdateStats(1.0f, 0.0f);
-        CurrentHUD->UpdateStatus(CurrentStage, CurrentWave, DeliveredCount, TargetDeliveries);
+        CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, TargetDeliveries);
         if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
         {
             PC->bShowMouseCursor = true;
@@ -361,7 +364,7 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
                 InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
             }
             PC->SetInputMode(InputMode);
-            CurrentHUD->UpdateStatus(CurrentStage, CurrentWave, DeliveredCount, TargetDeliveries);
+            CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, TargetDeliveries);
         }
     }
 
