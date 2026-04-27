@@ -12,7 +12,7 @@ ABatteryRecoverItem::ABatteryRecoverItem() {
 void ABatteryRecoverItem::ApplyEffect(ADrone* Drone) {
     if (Drone)
     {
-        Drone->AddBattery(30.0f); // 30% 회복
+        //Drone->AddBattery(30.0f); // 30% 회복
         PlayOverlapEffects();
         ShowPickupUI(Drone);
     }

@@ -17,9 +17,10 @@ ADeliveryPlatform::ADeliveryPlatform()
     PlatformMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlatformMesh"));
     PlatformMesh->SetupAttachment(RootComponent);
 
+    /*
     TargetIndicatorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TargetIndicatorMesh"));
     TargetIndicatorMesh->SetupAttachment(RootComponent);
-    TargetIndicatorMesh->SetVisibility(false);
+    TargetIndicatorMesh->SetVisibility(false);*/
 
     InitialRelativeZ = 150.0f;
 }
@@ -28,16 +29,18 @@ void ADeliveryPlatform::BeginPlay()
 {
 	Super::BeginPlay();
 
+    /*
     if (TargetIndicatorMesh)
     {
         InitialRelativeZ = TargetIndicatorMesh->GetRelativeLocation().Z;
-    }
+    }*/
 	
 }
 void ADeliveryPlatform::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
+    /*
     if (TargetIndicatorMesh && TargetIndicatorMesh->IsVisible())
     {
         // 회전 로직
@@ -52,7 +55,7 @@ void ADeliveryPlatform::Tick(float DeltaTime)
         FVector NewLocation = TargetIndicatorMesh->GetRelativeLocation();
         NewLocation.Z = NewZ;
         TargetIndicatorMesh->SetRelativeLocation(NewLocation);
-    }
+    }*/
 }
 //택배 배송 완료 로직
 void ADeliveryPlatform::NotifyActorBeginOverlap(AActor* OtherActor)
@@ -102,7 +105,7 @@ void ADeliveryPlatform::NotifyActorBeginOverlap(AActor* OtherActor)
         }
 
         // 상자 파괴 및 효과음
-        OtherActor->Destroy();
+        //OtherActor->Destroy();
         if (SuccessSound)
         {
             UGameplayStatics::PlaySoundAtLocation(this, SuccessSound, GetActorLocation());
@@ -132,8 +135,9 @@ void ADeliveryPlatform::MarkAsUsed()
 
 void ADeliveryPlatform::SetIsTarget(bool bIsTarget)
 {
+    /*
     if (TargetIndicatorMesh)
     {
         TargetIndicatorMesh->SetVisibility(bIsTarget);
-    }
+    }*/
 }
