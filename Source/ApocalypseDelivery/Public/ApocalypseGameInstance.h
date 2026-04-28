@@ -69,6 +69,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
     TSubclassOf<UUserWidget> LoadingWidgetClass;
 
+    //게임이 처음 켜졌는지 체크
+    UPROPERTY(BlueprintReadWrite, Category = "Loading")
+    bool bIsFirstBoot = true;
+
     // 로딩 화면 표시 함수
     UFUNCTION(BlueprintCallable, Category = "UI")
     void ShowLoadingScreen();

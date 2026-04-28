@@ -24,17 +24,32 @@ void AApocalypseGameMode::BeginPlay()
 
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
     UApocalypseGameInstance* GI = Cast<UApocalypseGameInstance>(GetGameInstance());
-    if (PC && PC->PlayerCameraManager)
+    //첫 실행 시 로딩화면 예외처리
+    if (GI && GI->bIsFirstBoot)
     {
-        //다음 레벨이 불러오자마자 화면을 즉시 검은색으로 강제 유지
-        PC->PlayerCameraManager->StartCameraFade(1.0f, 1.0f, 0.0f, FLinearColor::Black, false, true);
-    }
+        GI->bIsFirstBoot = false; //다음부터는 로딩이 뜨도록 바로 false 처리
 
-    //레벨 시작과 동시에 로딩 위젯 5초 최상단 유지 후 밝아지는 시퀀스 실행
-    ExecuteLoadingSequence([]()
+        if (PC)
         {
-            // 5초 로딩 완료 후 특별히 추가 실행할 콜백 로직은 없음
-        });
+            PC->bShowMouseCursor = true;
+            PC->SetInputMode(FInputModeUIOnly());
+        }
+    }
+    else
+    {
+        if (PC && PC->PlayerCameraManager)
+        {
+            //다음 레벨이 불러오자마자 화면을 즉시 검은색으로 강제 유지
+            PC->PlayerCameraManager->StartCameraFade(1.0f, 1.0f, 0.0f, FLinearColor::Black, false, true);
+        }
+
+        //레벨 시작과 동시에 로딩 위젯 5초 최상단 유지 후 밝아지는 시퀀스 실행
+        ExecuteLoadingSequence([]()
+            {
+                // 5초 로딩 완료 후 특별히 추가 실행할 콜백 로직은 없음
+            }
+        );
+    }
 
     //──미니맵 마커 초기화──
     CurrentPlatform = nullptr;
