@@ -14,6 +14,7 @@
 #include "Components/SceneCaptureComponent2D.h"
 #include "Engine/TextureRenderTarget2D.h"
 
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/BoxComponent.h"
@@ -174,6 +175,17 @@ void ADrone::BeginPlay()
 		Packages[0]->SetActorLocation(GetActorLocation() - GetActorUpVector() * HoldingDistance);
 		Pickup(FInputActionValue());
 	}
+
+	//사운드 미리 세팅
+	if (IsValid(DroneSound)) {
+		AudioComp = UGameplayStatics::SpawnSound2D(GetWorld(), DroneSound);
+		if (AudioComp)
+		{
+			AudioComp->bIsUISound = false;
+			AudioComp->SetVolumeMultiplier(0.0f);
+		}
+	}
+	
 }
 void ADrone::Tick(float DeltaTime)
 {
@@ -228,6 +240,17 @@ void ADrone::Tick(float DeltaTime)
 		TargetRotation.Roll = GetActorRotation().Roll;
 	}
 	SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, RotationLerpRate));
+
+	//카메라 FOV 속도에 따라 조정
+	if (IsMoving && !(GetWorld()->GetTimerManager().IsTimerActive(ControlTimerHandle))) {
+		CameraComp->FieldOfView = 90 + GetVelocity().Length() * FOVChangeRate;
+	}
+	else {
+		CameraComp->FieldOfView = FMath::Lerp(CameraComp->FieldOfView, 90, FOVChangeRate);
+	}
+	//속도에 따른 드론 효과음 조정
+	AudioComp->SetVolumeMultiplier(0.2 + GetVelocity().Length() * SoundMuliplier);
+	AudioComp->SetPitchMultiplier(0.2 + GetVelocity().Length() * SoundMuliplier);
 }
 
 void ADrone::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -265,7 +288,6 @@ void ADrone::BeginMove(const FInputActionValue& Value)
 		Direction += FVector(0, 0, Input.Z);
 	}
 	DesiredDirection = Direction.GetSafeNormal();
-	
 }
 void ADrone::EndMove(const FInputActionValue& Value)
 {
