@@ -113,6 +113,9 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameLogic")
     class ADeliveryPackage* CurrentPackage;
 
+    // 공통 로딩 시퀀스 함수
+    void ExecuteLoadingSequence(TFunction<void()> LogicAfterLoading);
+
 private:
     void UpdateDifficulty();
     UPROPERTY()

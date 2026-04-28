@@ -20,11 +20,39 @@ void AApocalypseGameMode::BeginPlay()
 {
     Super::BeginPlay();
 
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    UApocalypseGameInstance* GI = Cast<UApocalypseGameInstance>(GetGameInstance());
+    //첫 실행 시 로딩화면 예외처리
+    if (GI && GI->bIsFirstBoot)
+    {
+        GI->bIsFirstBoot = false; //다음부터는 로딩이 뜨도록 바로 false 처리
+
+        if (PC)
+        {
+            PC->bShowMouseCursor = true;
+            PC->SetInputMode(FInputModeUIOnly());
+        }
+    }
+    else
+    {
+        if (PC && PC->PlayerCameraManager)
+        {
+            //다음 레벨이 불러오자마자 화면을 즉시 검은색으로 강제 유지
+            PC->PlayerCameraManager->StartCameraFade(1.0f, 1.0f, 0.0f, FLinearColor::Black, false, true);
+        }
+
+        //레벨 시작과 동시에 로딩 위젯 5초 최상단 유지 후 밝아지는 시퀀스 실행
+        ExecuteLoadingSequence([]()
+            {
+                // 5초 로딩 완료 후 특별히 추가 실행할 콜백 로직은 없음
+            }
+        );
+    }
+
     //──미니맵 마커 초기화──
-    CurrentPlatform = nullptr;
-    CurrentTargetPlatform = nullptr;
-    CurrentPackage = nullptr;
-    bIsTimerActive = false;
+    //CurrentPlatform = nullptr;
+    //CurrentTargetPlatform = nullptr;
+    //CurrentPackage = nullptr;
 
     //CurrentTimeLeft = TimeLimit;
     bIsTimerActive = false;
@@ -33,6 +61,7 @@ void AApocalypseGameMode::BeginPlay()
         // 2D 사운드로 재생
         BGMComponent = UGameplayStatics::SpawnSound2D(this, BackgroundMusic);
     }
+
     if (HUDWidgetClass)
     {
         CurrentHUD = CreateWidget<UApocalypseHUD>(GetWorld(), HUDWidgetClass);
@@ -75,16 +104,17 @@ void AApocalypseGameMode::BeginPlay()
 void AApocalypseGameMode::StartQuest()
 {
     //스폰된 패키지를 즉시 미니맵 변수에 할당
+    /*
     TArray<AActor*> FoundPackages;
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Package"), FoundPackages);
     if (FoundPackages.Num() > 0)
     {
         CurrentPackage = Cast<ADeliveryPackage>(FoundPackages[0]);
     }
-
+    
     //CurrentTargetPlatform = GetRandomAvailablePlatform();
     CurrentPlatform = CurrentTargetPlatform; // 미니맵용 변수 재설정
-
+    */
     /*
     TArray<AActor*> AllPlatforms;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADeliveryPlatform::StaticClass(), AllPlatforms);
@@ -109,13 +139,14 @@ void AApocalypseGameMode::StartQuest()
     }*/
 
     // ── 미니맵 마커 관련 기능 ──
+    /*
     CurrentPlatform = CurrentTargetPlatform;
 
     if (CurrentTargetPlatform)
     {
         UE_LOG(LogTemp, Warning, TEXT("Quest Started! Target Platform: %s"), *CurrentTargetPlatform->GetName());
     }
-
+    */
     bIsTimerActive = true;
     AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
     if (IsValid(GS)) {
@@ -178,7 +209,7 @@ void AApocalypseGameMode::Tick(float DeltaTime)
         float SpeedValue = PlayerDrone->GetCurrentVelocity().Size();
 
         CurrentHUD->UpdateStats(1, SpeedValue);
-
+        /*
         if (CurrentTargetPlatform)
         {
             // 드론과 플랫폼 사이의 거리 계산
@@ -193,6 +224,7 @@ void AApocalypseGameMode::Tick(float DeltaTime)
             // 타겟이 없을 때는 0이나 특정 값으로 초기화
             CurrentHUD->UpdateDistance(0.0f);
         }
+        */
     }
 
     // ── 매 프레임마다 미니맵 갱신 ──
@@ -200,7 +232,7 @@ void AApocalypseGameMode::Tick(float DeltaTime)
     {
         // 드론 위치
         FVector DronePos = PlayerDrone->GetActorLocation();
-
+        /*
         // 목적지 정보 (StartQuest에서 이미 정해진 CurrentPlatform만 사용)
         bool bHasTarget = IsValid(CurrentPlatform);
         FVector TargetPos = bHasTarget ? CurrentPlatform->GetActorLocation() : FVector::ZeroVector;
@@ -208,7 +240,7 @@ void AApocalypseGameMode::Tick(float DeltaTime)
         // 화물 정보 갱신
         bool bHasPackage = false;
         FVector PackagePos = FVector::ZeroVector;
-
+        
         if (!CurrentPackage)
         {
             TArray<AActor*> FoundPackages;
@@ -228,12 +260,12 @@ void AApocalypseGameMode::Tick(float DeltaTime)
         }*/
 
         // HUD 업데이트 호출
-        CurrentHUD->UpdateMinimap(DronePos, bHasTarget, TargetPos, bHasPackage, PackagePos);
+        CurrentHUD->UpdateMinimap(DronePos/*, bHasTarget, TargetPos, bHasPackage, PackagePos*/);
     }
     else if (!bIsTimerActive && CurrentHUD)
     {
         // 퀘스트 시작 전에는 마커 숨김.
-        CurrentHUD->UpdateMinimap(FVector::ZeroVector, false, FVector::ZeroVector, false, FVector::ZeroVector);
+        CurrentHUD->UpdateMinimap(FVector::ZeroVector/*, false, FVector::ZeroVector, false, FVector::ZeroVector*/);
     }
 }
 
@@ -243,7 +275,7 @@ void AApocalypseGameMode::UpdateMinimapMarkers()
     if (!CurrentHUD || !PlayerDrone) return;
 
     FVector DronePos = PlayerDrone->GetActorLocation();
-
+    /*
     //목표 플랫폼
     bool    bHasTarget = (CurrentTargetPlatform != nullptr);
     FVector TargetPos = bHasTarget ? CurrentTargetPlatform->GetActorLocation() : FVector::ZeroVector;
@@ -270,9 +302,9 @@ void AApocalypseGameMode::UpdateMinimapMarkers()
 
     //HUD → MinimapWidget 전달
     CurrentHUD->UpdateMinimap(
-        DronePos,
+        DronePos/*,
         bHasTarget, TargetPos,
-        bHasPackage, PackagePos
+        bHasPackage, PackagePos*/
     );
 }
 
@@ -280,7 +312,7 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
 {
     //기록 저장 코드
     AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
-    if (IsValid(GS)) 
+    if (IsValid(GS))
     {
         GS->SetNotPlaying();
     }
@@ -289,9 +321,9 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     //CurrentWave++;
 
     // 다음 StartQuest 전까지 미니맵 마커를 비워둔다.
-    CurrentPackage = nullptr;
-    CurrentPlatform = nullptr;
-    CurrentTargetPlatform = nullptr;
+    //CurrentPackage = nullptr;
+    //CurrentPlatform = nullptr;
+    //CurrentTargetPlatform = nullptr;
     // ────────────────
 
     if (TargetPlatform)
@@ -314,6 +346,21 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
         }
         FTimerHandle LevelTransitionTimer;
         GetWorldTimerManager().SetTimer(LevelTransitionTimer, this, &AApocalypseGameMode::MoveToNextLevel, 3.0f, false);
+
+        //기존 레벨이 사라지기 직전에 마지막으로 0.5초간 서서히 검은 화면 전환
+        APlayerController* PC = GetWorld()->GetFirstPlayerController();
+        if (PC && PC->PlayerCameraManager)
+        {
+            PC->PlayerCameraManager->StartCameraFade(0.0f, 1.0f, 0.5f, FLinearColor::Black, false, true);
+        }
+
+        // 0.5초 대기(페이드 아웃 완료) 직후 바로 다음 레벨 호출
+        FTimerHandle DelayTimer;
+        GetWorldTimerManager().SetTimer(DelayTimer, [this]()
+            {
+                this->MoveToNextLevel();
+            },
+            0.5f, false);
 
         return;
     }
@@ -353,31 +400,52 @@ void AApocalypseGameMode::EndGame(bool bIsVictory)
         GS->SetNotPlaying();
     }
     //------------
-    UGameplayStatics::SetGamePaused(GetWorld(), true);
+
+    // UGameplayStatics::SetGamePaused는 결과창이 로딩 뒤에 깔릴 때 실행하도록 람다로 이동
     if (BGMComponent)
     {
         BGMComponent->FadeOut(1.0f, 0.0f);
     }
+
+    //0.5초간 서서히 검은 화면으로 전환
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
-    if (PC)
+    if (PC && PC->PlayerCameraManager)
     {
-        PC->bShowMouseCursor = true;
-        FInputModeUIOnly InputMode;
-        PC->SetInputMode(InputMode);
+        PC->PlayerCameraManager->StartCameraFade(0.0f, 1.0f, 0.5f, FLinearColor::Black, false, true);
     }
 
-    // 승리/패배 여부에 따라 생성할 클래스 결정
-    TSubclassOf<UUserWidget> WidgetToCreate = bIsVictory ? SuccessWidgetClass : FailureWidgetClass;
-
-    if (WidgetToCreate)
-    {
-        UUserWidget* ResultWidget = CreateWidget<UUserWidget>(GetWorld(), WidgetToCreate);
-        if (ResultWidget)
+    //0.5초 뒤 로딩 시퀀스 시작
+    FTimerHandle ResultTimer;
+    GetWorldTimerManager().SetTimer(ResultTimer, [this, bIsVictory, PC]()
         {
-            ResultWidget->AddToViewport();
-        }
-    }
+            //로딩 위젯을 띄우기 직전, 로딩 위젯 바로 아래(Z-Order:0)에 결과 위젯을 먼저 생성해둠
+            TSubclassOf<UUserWidget> WidgetToCreate = bIsVictory ? SuccessWidgetClass : FailureWidgetClass;
+            if (WidgetToCreate)
+            {
+                UUserWidget* ResultWidget = CreateWidget<UUserWidget>(GetWorld(), WidgetToCreate);
+                if (ResultWidget)
+                {
+                    ResultWidget->AddToViewport(0);
+                }
+            }
+
+            //직후 강제로 로딩 위젯을 5초간 최상단에 덮어씌움
+            this->ExecuteLoadingSequence([this, PC]()
+                {
+                    //5초 로딩 유지 시간이 끝나고 화면이 밝아질 때 게임 일시정지 및 조작 설정
+                    UGameplayStatics::SetGamePaused(GetWorld(), true);
+                    if (PC)
+                    {
+                        PC->bShowMouseCursor = true;
+                        FInputModeUIOnly InputMode;
+                        PC->SetInputMode(InputMode);
+                    }
+                }
+            );
+        },
+        0.5f, false);
 }
+
 void AApocalypseGameMode::MoveToNextLevel()
 {
     FName NextLevelName;
@@ -400,4 +468,34 @@ void AApocalypseGameMode::MoveToNextLevel()
 
     // 맵 이동 실행
     UGameplayStatics::OpenLevel(GetWorld(), NextLevelName);
+}
+
+// 로딩 시퀀스 구현 (Fade Out -> 5초 대기 -> Logic 실행 -> Fade In)
+void AApocalypseGameMode::ExecuteLoadingSequence(TFunction<void()> LogicAfterLoading)
+{
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    UApocalypseGameInstance* GI = Cast<UApocalypseGameInstance>(GetGameInstance());
+
+    if (!PC || !GI) return;
+
+    //로딩 위젯을 5초간 최상단에 덮어씌움
+    GI->ShowLoadingScreen();
+
+    //5초 대기 후 로직 실행
+    FTimerHandle TimerHandle;
+    GetWorldTimerManager().SetTimer(TimerHandle, [this, GI, PC, LogicAfterLoading]()
+        {
+            //전달받은 핵심 로직 실행
+            if (LogicAfterLoading) LogicAfterLoading();
+
+            //5초 끝나면 로딩 화면 사라짐
+            GI->HideLoadingScreen();
+
+            //5초 끝나면 동시에 3초간 서서히 화면 밝기 복구
+            if (PC->PlayerCameraManager)
+            {
+                PC->PlayerCameraManager->StartCameraFade(1.0f, 0.0f, 3.0f, FLinearColor::Black, false, false);
+            }
+        },
+        5.0f, false);
 }

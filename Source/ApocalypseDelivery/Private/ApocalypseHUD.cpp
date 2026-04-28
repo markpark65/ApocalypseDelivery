@@ -69,16 +69,16 @@ void UApocalypseHUD::InitializeMinimapWithTexture(UTexture2D* MinimapTexture)
 */
 
 void UApocalypseHUD::UpdateMinimap(
-    FVector DronePos,
+    FVector DronePos/*,
     bool bHasTarget, FVector TargetPos,
-    bool bHasPackage, FVector PackagePos)
+    bool bHasPackage, FVector PackagePos*/)
 {
     if (MinimapWidget)
     {
         MinimapWidget->UpdateMarkers(
-            DronePos,
+            DronePos/*,
             bHasTarget, TargetPos,
-            bHasPackage, PackagePos
+            bHasPackage, PackagePos*/
         );
     }
 }

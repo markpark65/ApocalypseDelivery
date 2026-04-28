@@ -68,9 +68,9 @@ public:
      * @param PackageWorldPos 화물 월드 위치
      */
     void UpdateMarkers(
-        FVector DroneWorldPos,
+        FVector DroneWorldPos/*,
         bool    bHasTarget, FVector TargetWorldPos,
-        bool    bHasPackage, FVector PackageWorldPos
+        bool    bHasPackage, FVector PackageWorldPos*/
     );
 
 protected:
@@ -87,11 +87,11 @@ private:
     UPROPERTY(meta = (BindWidget))
     UImage* DroneMarker = nullptr;
 
-    UPROPERTY(meta = (BindWidget))
-    UImage* TargetMarker = nullptr;
+    //UPROPERTY(meta = (BindWidget))
+    //UImage* TargetMarker = nullptr;
 
-    UPROPERTY(meta = (BindWidget))
-    UImage* PackageMarker = nullptr;
+    //UPROPERTY(meta = (BindWidget))
+    //UImage* PackageMarker = nullptr;
 
     // ── 내부 유틸 ────────────────────────────────────────────────────────────
 

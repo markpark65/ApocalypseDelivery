@@ -42,9 +42,9 @@ public:
 
     // ApocalypseGameMode::Tick에서 마커 위치 갱신.
     void UpdateMinimap(
-        FVector DronePos,
-        bool bHasTarget, FVector TargetPos,
-        bool bHasPackage, FVector PackagePos
+        FVector DronePos//,
+        //bool bHasTarget, FVector TargetPos,
+        //bool bHasPackage, FVector PackagePos
     );
 
     // 초기화 시 버튼 클릭 이벤트 연결
