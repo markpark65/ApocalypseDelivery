@@ -1,12 +1,10 @@
 ﻿#include "ApocalypseGameMode.h"
 #include "ApocalypseGameStateBase.h"
-#include "MeteorSpawner.h"
 #include "Drone.h"
-#include "PackageSpawner.h"
 #include "DeliveryPackage.h"
 #include "DeliveryPlatform.h"
 #include "ApocalypseHUD.h"
-#include "ItemSpawner.h"
+
 
 
 #include "Blueprint/UserWidget.h"
@@ -51,8 +49,6 @@ void AApocalypseGameMode::BeginPlay()
         }
     }
     PlayerDrone = Cast<ADrone>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-    // 레벨에 배치된 Spawner 찾기
-    Spawner = Cast<AMeteorSpawner>(UGameplayStatics::GetActorOfClass(GetWorld(), AMeteorSpawner::StaticClass()));
 
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
     if (PC)
@@ -66,28 +62,18 @@ void AApocalypseGameMode::BeginPlay()
         }
         PC->SetInputMode(InputMode);
     }
-    ItemSpawner = Cast<AItemSpawner>(UGameplayStatics::GetActorOfClass(GetWorld(), AItemSpawner::StaticClass()));
 
+    //상자 배달지점 갯수 확인
     TArray<AActor*> FoundPlatforms;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADeliveryPlatform::StaticClass(), FoundPlatforms);
     NumberOfDeliveries = FoundPlatforms.Num();
+    
+    //레벨별 아이템 필터링
+    UpdateDifficulty();
 }
 
 void AApocalypseGameMode::StartQuest()
 {
-    UpdateDifficulty();
-    if (Spawner)
-    {
-        Spawner->StartSpawning();
-        bIsTimerActive = true;
-        UE_LOG(LogTemp, Warning, TEXT("Quest Started! Meteors Falling..."));
-    }
-    /*AActor* FoundSpawner = UGameplayStatics::GetActorOfClass(GetWorld(), APackageSpawner::StaticClass());
-    if (APackageSpawner* PSpawner = Cast<APackageSpawner>(FoundSpawner))
-    {
-        PSpawner->SpawnPackage();
-    }*/
-
     //스폰된 패키지를 즉시 미니맵 변수에 할당
     TArray<AActor*> FoundPackages;
     UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Package"), FoundPackages);
@@ -233,11 +219,13 @@ void AApocalypseGameMode::Tick(float DeltaTime)
             }
         }
 
+        //상자 픽업 로직 삭제로 임시 주석처리
+        /*
         if (CurrentPackage && PlayerDrone->GetAttachedPackage() == nullptr)
         {
             bHasPackage = true;
             PackagePos = CurrentPackage->GetActorLocation();
-        }
+        }*/
 
         // HUD 업데이트 호출
         CurrentHUD->UpdateMinimap(DronePos, bHasTarget, TargetPos, bHasPackage, PackagePos);
@@ -264,6 +252,8 @@ void AApocalypseGameMode::UpdateMinimapMarkers()
     bool    bHasPackage = false;
     FVector PackagePos = FVector::ZeroVector;
 
+    //패키지 픽업 로직 삭제로 임시 주석처리
+    /*
     AActor* Attached = PlayerDrone->GetAttachedPackage();
     if (!Attached)
     {
@@ -276,7 +266,7 @@ void AApocalypseGameMode::UpdateMinimapMarkers()
             bHasPackage = true;
             PackagePos = FoundPackages[0]->GetActorLocation(); //첫 번째 화물
         }
-    }
+    }*/
 
     //HUD → MinimapWidget 전달
     CurrentHUD->UpdateMinimap(
@@ -288,7 +278,6 @@ void AApocalypseGameMode::UpdateMinimapMarkers()
 
 void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
 {
-    //bIsTimerActive = false;
     //기록 저장 코드
     AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
     if (IsValid(GS)) 
@@ -318,8 +307,6 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
             bIsTimerActive = false;
             EndGame(true);
         }
-        //CurrentWave = 1;
-        //UpdateDifficulty();
         if (CurrentHUD)
         {
             // HUD에 스테이지 클리어 UI 호출
@@ -330,29 +317,6 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
 
         return;
     }
-    /*if (PlayerDrone)
-    {
-        PlayerDrone->AddBattery(PlayerDrone->MaxBattery);
-    }*/
-    /*if (CurrentStage > 3) // 모든 스테이지 클리어 시
-    {
-        bIsTimerActive = false;
-        EndGame(true);
-    }*/
-    /*
-    if (PlayerDrone)
-    {
-        AActor* PlayerStart = UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass());
-        if (PlayerStart)
-        {
-            PlayerDrone->SetActorLocationAndRotation(PlayerStart->GetActorLocation(), PlayerStart->GetActorRotation());
-            if (auto* Mesh = Cast<UPrimitiveComponent>(PlayerDrone->GetRootComponent()))
-            {
-                Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
-                Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-            }
-        }
-    }*/
 
     if(CurrentHUD)
     {
@@ -360,72 +324,22 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
         FString StageInfo = FString::Printf(TEXT("%d - %d"), CurrentStage, 99);
         CurrentHUD->UpdateStageText(StageInfo);
         CurrentHUD->UpdateStats(1.0f, 0.0f);
-        CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, NumberOfDeliveries);
+        CurrentHUD->UpdateStatus(CurrentStage, DeliveredCount, NumberOfDeliveries);
         StartQuest();
-        /*
-        if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
-        {
-            PC->bShowMouseCursor = true;
-            FInputModeGameAndUI InputMode;
-            if (CurrentHUD)
-            {
-                CurrentHUD->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-                if (UWidget* ButtonWidget = Cast<UWidget>(CurrentHUD->StartQuestButton))
-                {
-                    ButtonWidget->SetVisibility(ESlateVisibility::Visible);
-                }
-                InputMode.SetWidgetToFocus(CurrentHUD->TakeWidget());
-                InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-            }
-            PC->SetInputMode(InputMode);
-            CurrentHUD->UpdateStatus(CurrentStage, CurrentWave, DeliveredCount, TargetDeliveries);
-        }
-        */
+
     }
-    /*
-    CurrentTimeLeft = TimeLimit;
-    int32 Mins = FMath::FloorToInt(CurrentTimeLeft / 60.0f);
-    int32 Secs = FMath::FloorToInt(CurrentTimeLeft) % 60;
-    CurrentHUD->UpdateTimer(Mins, Secs);*/
+
 }
 
 void AApocalypseGameMode::UpdateDifficulty()
 {
-    if (WaveSettings.IsValidIndex(CurrentWaveIndex))
-    {
-        const FWaveData& CurrentWaveData = WaveSettings[CurrentWaveIndex];
-
-        // 시간 제한 적용
-        //TimeLimit = CurrentWaveData.TimeLimit;
-        //CurrentTimeLeft = TimeLimit;
-
-        // 목표 배달 수 적용
-        TargetDeliveries = CurrentWaveData.TargetDeliveries;
-
-        /*
-        // 운석 스패너 설정
-        if (Spawner)
-        {
-            Spawner->SetSpawnInterval(CurrentWaveData.MeteorSpawnInterval);
-            Spawner->StartSpawning();
-        }
-
-        // 지뢰 및 아이템 스폰
-        if (ItemSpawner)
-        {
-            ItemSpawner->SpawnMines(CurrentWaveData.MineSpawnCount);
-            ItemSpawner->SpawnDebuffs(CurrentWaveData.DebuffItemCount);
-            ItemSpawner->SpawnBuffs(CurrentWaveData.BuffItemCount);
-        }*/
-
-        UE_LOG(LogTemp, Warning, TEXT("Wave %d Started! Target: %d"), CurrentWaveIndex + 1, TargetDeliveries);
+    if (CurrentStage == 0) {
+        return;
     }
 }
 
 void AApocalypseGameMode::GameOver()
 {
-    if (Spawner) Spawner->StopSpawning();
-
     // UI에 게임오버 알림
     UGameplayStatics::SetGamePaused(GetWorld(), true);
 }
@@ -468,13 +382,9 @@ void AApocalypseGameMode::MoveToNextLevel()
 {
     FName NextLevelName;
 
-    if (CurrentStage == 2)
+    if (CurrentStage <= 3)
     {
-        NextLevelName = FName("Stage2_Map");
-    }
-    else if (CurrentStage == 3)
-    {
-        NextLevelName = FName("Stage3_Map");
+        NextLevelName = FName("MapDraft_EJ");
     }
     else
     {
@@ -491,26 +401,3 @@ void AApocalypseGameMode::MoveToNextLevel()
     // 맵 이동 실행
     UGameplayStatics::OpenLevel(GetWorld(), NextLevelName);
 }
-
-/*
-ADeliveryPlatform* AApocalypseGameMode::GetRandomAvailablePlatform()
-{
-    TArray<AActor*> FoundPlatforms;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADeliveryPlatform::StaticClass(), FoundPlatforms);
-
-    TArray<ADeliveryPlatform*> AvailablePlatforms;
-    for (AActor* Actor : FoundPlatforms)
-    {
-        ADeliveryPlatform* Platform = Cast<ADeliveryPlatform>(Actor);
-        if (Platform && !Platform->bIsUsed)
-        {
-            AvailablePlatforms.Add(Platform);
-        }
-    }
-
-    if (AvailablePlatforms.Num() > 0)
-    {
-        return AvailablePlatforms[FMath::RandRange(0, AvailablePlatforms.Num() - 1)];
-    }
-    return nullptr;
-}*/

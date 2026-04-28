@@ -18,6 +18,7 @@ public:
 
 	void SetNotPlaying();
 	void SetPlaying();
+	bool GetIsPlaying() { return IsPlaying; };
 	float GetTimeElapsed();
 
 protected:

@@ -5,6 +5,7 @@
 #include "Engine/DataTable.h"
 #include "ApocalypseGameMode.generated.h"
 
+/*
 USTRUCT(BlueprintType)
 struct FWaveData
 {
@@ -27,10 +28,8 @@ struct FWaveData
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 BuffItemCount = 1;
-};
+};*/
 
-class AItemSpawner;
-class AMeteorSpawner;
 class ADrone;
 
 UCLASS()
@@ -75,7 +74,7 @@ public:
 
     FORCEINLINE bool IsTimerActive() const { return bIsTimerActive; }
 
-    //ADeliveryPlatform* GetRandomAvailablePlatform();
+
 protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
@@ -90,11 +89,6 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
     int32 CurrentStage = 1;
 
-    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
-    //int32 CurrentWave = 1;
-
-    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
-    //int32 MaxWavesPerStage = 3;
     int32 NumberOfDeliveries;
 
     UPROPERTY(EditAnywhere, Category = "Sound")
@@ -110,12 +104,6 @@ protected:
     //float CurrentTimeLeft;
     bool bIsTimerActive = false;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WaveSystem")
-    TArray<FWaveData> WaveSettings;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WaveSystem")
-    int32 CurrentWaveIndex = 0;
-
     //──미니맵 마커 관련 변수──
     // 현재 배달 목표 플랫폼
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameLogic")
@@ -127,12 +115,8 @@ protected:
 
 private:
     void UpdateDifficulty();
-    class AMeteorSpawner* Spawner;
     UPROPERTY()
     class ADrone* PlayerDrone;
-
-    UPROPERTY()
-    AItemSpawner* ItemSpawner;
 
     UPROPERTY()
     class ADeliveryPlatform* CurrentTargetPlatform;

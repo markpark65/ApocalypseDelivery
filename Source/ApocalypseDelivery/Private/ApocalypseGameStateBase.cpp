@@ -31,7 +31,6 @@ void AApocalypseGameStateBase::Tick(float DeltaTime)
 	}
 }
 
-
 void AApocalypseGameStateBase::SetPlaying() {
 	IsPlaying = true;
 }

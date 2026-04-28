@@ -1,9 +1,11 @@
 ﻿#include "DeliveryPlatform.h"
-#include "Components/BoxComponent.h"
-#include "Components/StaticMeshComponent.h"
 #include "Drone.h"
 #include "ApocalypseHUD.h"
 #include "ApocalypseGameMode.h"
+#include "DeliveryPackage.h"
+
+#include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 ADeliveryPlatform::ADeliveryPlatform()
@@ -66,22 +68,6 @@ void ADeliveryPlatform::NotifyActorBeginOverlap(AActor* OtherActor)
     {
         return;
     }
-    //현재 배달 지정 플랫폼만 보이기에 사용안됨
-    /*if (!TargetIndicatorMesh->IsVisible())
-    {
-        if (OtherActor && OtherActor->ActorHasTag("Package"))
-        {
-            if (auto* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
-            {
-                if (GM->CurrentHUD)
-                {
-                    GM->CurrentHUD->ShowWrongDeliveryUI();
-                }
-            }
-            UE_LOG(LogTemp, Warning, TEXT("Not the target platform!"));
-        }
-        return;
-    }*/
 
     if (OtherActor->ActorHasTag("Package"))
     {
@@ -92,10 +78,8 @@ void ADeliveryPlatform::NotifyActorBeginOverlap(AActor* OtherActor)
         {
             if (ADrone* Drone = Cast<ADrone>(Actor))
             {
-                if (Drone->GetAttachedPackage() == OtherActor)
+                if (OtherActor->IsA(ADeliveryPackage::StaticClass()))
                 {
-                    Drone->SetAttachedPackage(nullptr);
-
                     if (AApocalypseGameMode* GM = Cast<AApocalypseGameMode>(GetWorld()->GetAuthGameMode()))
                     {
                         if (GM->CurrentHUD) GM->CurrentHUD->SetInteractionPrompt(false, TEXT(""));
@@ -104,8 +88,7 @@ void ADeliveryPlatform::NotifyActorBeginOverlap(AActor* OtherActor)
             }
         }
 
-        // 상자 파괴 및 효과음
-        //OtherActor->Destroy();
+        // 상자 배달 효과음
         if (SuccessSound)
         {
             UGameplayStatics::PlaySoundAtLocation(this, SuccessSound, GetActorLocation());
@@ -131,13 +114,4 @@ void ADeliveryPlatform::MarkAsUsed()
             DynMaterial->SetVectorParameterValue(TEXT("Color"), FLinearColor::Red);
         }
     }
-}
-
-void ADeliveryPlatform::SetIsTarget(bool bIsTarget)
-{
-    /*
-    if (TargetIndicatorMesh)
-    {
-        TargetIndicatorMesh->SetVisibility(bIsTarget);
-    }*/
 }

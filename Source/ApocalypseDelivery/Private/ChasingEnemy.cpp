@@ -2,7 +2,6 @@
 
 
 #include "ChasingEnemy.h"
-#include "ItemMessageWidget.h"
 #include "Drone.h"
 #include "ApocalypseDroneController.h"
 
@@ -142,33 +141,6 @@ void AChasingEnemy::PlayOverlapEffects() {
 		if (OverlapSound) UGameplayStatics::PlaySoundAtLocation(this, OverlapSound, GetActorLocation());
 }
 
-void AChasingEnemy::ShowPickupUI(ADrone* Drone) {
-	// 드론이 없거나, 위젯 클래스가 설정되지 않았거나, 메시지가 비어있으면 실행하지 않음
-	if (!Drone || !ItemMessageWidgetClass || PickupMessage.IsEmpty()) return;
-
-	APlayerController* PC = Cast<APlayerController>(Drone->GetController());
-	if (PC)
-	{
-		// 위젯 생성
-		UUserWidget* RawWidget = CreateWidget<UUserWidget>(PC, ItemMessageWidgetClass);
-		UItemMessageWidget* ItemWidget = Cast<UItemMessageWidget>(RawWidget);
-
-		if (ItemWidget)
-		{
-			// 메시지 설정 및 화면에 추가
-			ItemWidget->SetMessage(PickupMessage);
-			ItemWidget->AddToViewport();
-
-			UE_LOG(LogTemp, Warning, TEXT("ItemCollided!"));
-			// 2초 뒤에 위젯을 제거하는 타이머 설정
-			FTimerHandle TimerHandle;
-			GetWorld()->GetTimerManager().SetTimer(TimerHandle, [ItemWidget]() {
-				if (ItemWidget) ItemWidget->RemoveFromParent();
-				}, 2.0f, false);
-		}
-	}
-}
-
 void AChasingEnemy::ApplyEffect_Implementation(class ADrone* Drone) {
 	//Drone->SetReverseControl(10.0f);
 	if (IsRepulsive) {
@@ -183,6 +155,5 @@ void AChasingEnemy::ApplyEffect_Implementation(class ADrone* Drone) {
 		//
 	}
 	PlayOverlapEffects();
-	ShowPickupUI(Drone);
 	Destroy();
 }

@@ -16,8 +16,6 @@ public:
     void MarkAsUsed();
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Delivery")
     bool bIsUsed = false;
-    UFUNCTION(BlueprintCallable, Category = "Delivery")
-    void SetIsTarget(bool bIsTarget);
 protected:
 	virtual void BeginPlay() override;
     // 영역 감지용 콜리전

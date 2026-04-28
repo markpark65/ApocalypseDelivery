@@ -4,7 +4,7 @@
 #include "ApocalypseHUD.h"
 #include "ApocalypseGameMode.h"
 #include "ApocalypseGameStateBase.h"
-#include "PackageSpawner.h"
+#include "DeliveryPackage.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -27,11 +27,6 @@
 
 
 ADrone::ADrone()
-	: AttachedPackage(nullptr)
-	//, CapsuleHalfHeight(0.0f)
-	//, CurrentBattery(0.0f)
-	//, OriginalSpeed(0.0f)
-	//, bIsOnGround(false)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -163,18 +158,16 @@ void ADrone::BeginPlay()
 	// ── 
 	
 	//시작과 동시에 상자 보유.
-	AActor* FoundSpawner = UGameplayStatics::GetActorOfClass(GetWorld(), APackageSpawner::StaticClass());
-	if (APackageSpawner* PSpawner = Cast<APackageSpawner>(FoundSpawner))
-	{
-		PSpawner->SpawnPackage();
-	}
-	TArray<AActor*> Packages;
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Package"), Packages);
-	if (!Packages.IsEmpty()) {
-		UE_LOG(LogTemp, Warning, TEXT("Attaching Package box"));
-		Packages[0]->SetActorLocation(GetActorLocation() - GetActorUpVector() * HoldingDistance);
-		Pickup(FInputActionValue());
-	}
+	AActor* Package = GetWorld()->SpawnActor<AActor>(PackageClass, GetActorLocation() - GetActorUpVector() * HoldingDistance, GetActorRotation());
+	UPrimitiveComponent* Target = Cast<UPrimitiveComponent>(Package->GetRootComponent());
+	PhysicsConstraint->SetConstrainedComponents(Cast<UPrimitiveComponent>(RootComponent), NAME_None, Target, NAME_None);
+
+	PhysicsConstraint->SetLinearXLimit(LCM_Locked, 0.f);
+	PhysicsConstraint->SetLinearYLimit(LCM_Locked, 0.f);
+	PhysicsConstraint->SetLinearZLimit(LCM_Locked, 0.f);
+	PhysicsConstraint->SetAngularSwing1Limit(ACM_Locked, 0.f);
+	PhysicsConstraint->SetAngularSwing2Limit(ACM_Locked, 0.f);
+	PhysicsConstraint->SetAngularTwistLimit(ACM_Locked, 0.f);
 
 	//사운드 미리 세팅
 	if (IsValid(DroneSound)) {
@@ -192,16 +185,10 @@ void ADrone::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	
-	if (GM->IsTimerActive())
+	if (GetWorld()->GetGameState<AApocalypseGameStateBase>()->GetIsPlaying())
 	{
 		//Calculate velocity and apply to the movement
 		CurrentDirection = FMath::VInterpTo(CurrentDirection, DesiredDirection, DeltaTime, MovementLerpRate);
-		/*CurrentBattery -= CurrentDirection.Length() * DeltaTime;
-		if (CurrentBattery <= 0)
-		{
-			CurrentBattery = 0;
-			HandleGameOver();
-		}*/
 		AddMovementInput(CurrentDirection);
 	}
 	
@@ -263,11 +250,9 @@ void ADrone::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 			EnhancedInput->BindAction(PC->MoveAction, ETriggerEvent::Triggered, this, &ADrone::BeginMove);
 			EnhancedInput->BindAction(PC->MoveAction, ETriggerEvent::Completed, this, &ADrone::EndMove);
 			EnhancedInput->BindAction(PC->LookAction, ETriggerEvent::Triggered, this, &ADrone::Look);
-			//EnhancedInput->BindAction(PC->UpDownAction, ETriggerEvent::Triggered, this, &ADrone::UpDown);
 			EnhancedInput->BindAction(PC->RollAction, ETriggerEvent::Triggered, this, &ADrone::BeginRolling);
 			EnhancedInput->BindAction(PC->RollAction, ETriggerEvent::Completed, this, &ADrone::EndRolling);
-			//EnhancedInput->BindAction(PC->PickupAction, ETriggerEvent::Started, this, &ADrone::Pickup);
-			EnhancedInput->BindAction(PC->IA_Interact, ETriggerEvent::Started, this, &ADrone::UseItem);
+			EnhancedInput->BindAction(PC->IA_Interact, ETriggerEvent::Started, this, &ADrone::UseTeleport);
 		}
 	}
 }
@@ -330,40 +315,8 @@ void ADrone::EndRolling(const FInputActionValue& Value)
 	//Clear Rolling Status
 	IsRolling = false;
 }
-void ADrone::Pickup(const FInputActionValue& Value)
-{
-	if (IsValid(AttachedPackage)) {
-		return;
-	}
-	TArray<AActor*> OverlappingActors;
-	InteractionSphere->GetOverlappingActors(OverlappingActors);
 
-	for (AActor* Actor : OverlappingActors)
-	{
-		// 인터페이스(IADInteractable)나 태그를 확인
-		if (Actor->ActorHasTag("Package"))
-		{
-			AttachedPackage = Actor;
-			break;
-		}
-	}
-	if (!IsValid(AttachedPackage)) {
-		return;
-	}
-
-	//Set PhysicalConstraint
-	UPrimitiveComponent* Target = Cast<UPrimitiveComponent>(AttachedPackage->GetRootComponent());
-	AttachedPackage->SetActorLocation(GetActorLocation() - GetActorUpVector() * HoldingDistance);
-	PhysicsConstraint->SetConstrainedComponents(Cast<UPrimitiveComponent>(RootComponent), NAME_None, Target, NAME_None);
-
-	PhysicsConstraint->SetLinearXLimit(LCM_Locked, 0.f);
-	PhysicsConstraint->SetLinearYLimit(LCM_Locked, 0.f);
-	PhysicsConstraint->SetLinearZLimit(LCM_Locked, 0.f);
-	PhysicsConstraint->SetAngularSwing1Limit(ACM_Locked, 0.f);
-	PhysicsConstraint->SetAngularSwing2Limit(ACM_Locked, 0.f);
-	PhysicsConstraint->SetAngularTwistLimit(ACM_Locked, 0.f);
-	UE_LOG(LogTemp, Warning, TEXT("Physical Constraints set"));
-}
+//속도 효과
 void ADrone::SetTemporarySpeed(float Multiplier, float Duration)
 {
 	//위젯에 표시할 최댓값 저장
@@ -385,7 +338,6 @@ void ADrone::SetTemporarySpeed(float Multiplier, float Duration)
 	GetWorldTimerManager().SetTimer(SpeedTimerHandle, this, &ADrone::ResetSpeed, Duration, false);
 	UE_LOG(LogTemp, Warning, TEXT("Speed Changed! Multiplier: %f"), Multiplier);
 }
-
 void ADrone::ResetSpeed()
 {
 	//MoveSpeed = OriginalSpeed;
@@ -393,17 +345,8 @@ void ADrone::ResetSpeed()
 	UE_LOG(LogTemp, Warning, TEXT("Speed Restored."));
 }
 
-// 배리어 설정
-void ADrone::SetShield(bool bEnable)
-{
-	bHasShield = bEnable;
-	if (ShieldMesh)
-	{
-		ShieldMesh->SetVisibility(bEnable);
-	}
-	UE_LOG(LogTemp, Warning, TEXT("Shield Status: %s"), bEnable ? TEXT("ON") : TEXT("OFF"));
-}
 
+//조작 효과
 void ADrone::SetControlMultiplier(float Muliplier, float Duration) {
 	//위젯에 표시할 값 저장
 	ControlEffectMaxDuration = Duration;
@@ -413,28 +356,8 @@ void ADrone::SetControlMultiplier(float Muliplier, float Duration) {
 	UE_LOG(LogTemp, Warning, TEXT("Control Changed! - %f"), Muliplier);
 }
 void ADrone::ResetControlMultiplier() { ControlMultiplier = 1.0f; }
-/*
-// 조장 방해 설정
-void ADrone::SetReverseControl(float Duration)
-{
-	bIsReverseControl = true;
-	GetWorldTimerManager().SetTimer(ReverseTimerHandle, this, &ADrone::ResetReverseControl, Duration, false);
-	UE_LOG(LogTemp, Warning, TEXT("Reverse Control Active!"));
-}
-void ADrone::ResetReverseControl() { bIsReverseControl = false; }*/
 
-//카메라 고정 설정
-void ADrone::SetLookFreeze(float Duration)
-{
-	//위젯에 표시할 최댓값 저장
-	LookFreezeMaxDuration = Duration;
-	bIsLookFrozen = true;
-	GetWorldTimerManager().SetTimer(LookFreezeTimerHandle, this, &ADrone::ResetLookFreeze, Duration, false);
-	UE_LOG(LogTemp, Warning, TEXT("Camera Frozen!"));
-}
-
-void ADrone::ResetLookFreeze() { bIsLookFrozen = false; }
-
+//중력 효과
 void ADrone::SetGravitated(float Duration)
 {
 	//위젯에 표시할 최댓값 저장
@@ -443,13 +366,13 @@ void ADrone::SetGravitated(float Duration)
 	GetWorldTimerManager().SetTimer(GravityTimerHandle, this, &ADrone::ResetGravited, Duration, false);
 	UE_LOG(LogTemp, Warning, TEXT("Gravity on!"));
 }
-
 void ADrone::ResetGravited()
 {
 	BoxComp->SetSimulatePhysics(false);
 	UE_LOG(LogTemp, Warning, TEXT("Gravity off!"));
 }
 
+//스케일 효과
 void ADrone::SetTemporalScale(float ScaleValue, float CameraDistanceRatio, float Duration) {
 	//위젯에 표시할 최댓값 저장
 	ScaleMaxDuration = Duration;
@@ -459,13 +382,13 @@ void ADrone::SetTemporalScale(float ScaleValue, float CameraDistanceRatio, float
 	GetWorldTimerManager().SetTimer(ScaleTimerHandle, this, &ADrone::ResetTemporalScale, Duration, false);
 	UE_LOG(LogTemp, Warning, TEXT("Scale Changed! - %f"), ScaleValue);
 }
-
 void ADrone::ResetTemporalScale() {
 	UE_LOG(LogTemp, Warning, TEXT("Scale restored"));
 	SetActorScale3D(FVector::OneVector);
 	SpringArmComp->TargetArmLength = OriginalArmLength;
 }
 
+//지연 효과
 void ADrone::SetDelayedInput(float MovementDelayRatio, float RotationDelayRatio, float Duration)
 {
 	//위젯에 표시할 최댓값 저장
@@ -476,7 +399,6 @@ void ADrone::SetDelayedInput(float MovementDelayRatio, float RotationDelayRatio,
 	RotationLerpRate *= RotationDelayRatio;
 	GetWorldTimerManager().SetTimer(ScaleTimerHandle, this, &ADrone::ResetDelayedInput, Duration, false);
 }
-
 void ADrone::ResetDelayedInput()
 {
 	UE_LOG(LogTemp, Warning, TEXT("LerpRate restored - MovementLerpRate: %f, RotationLerpRate: %f"), OriginalMovementLerpRate, OriginalRotationLerpRate);
@@ -484,22 +406,30 @@ void ADrone::ResetDelayedInput()
 	RotationLerpRate = OriginalRotationLerpRate;
 }
 
-//디버프 제거
-void ADrone::ClearAllDebuffs()
-{
-	//bIsReverseControl = false;
-	ControlMultiplier = 1.0f;
-	bIsLookFrozen = false;
-
-	GetWorldTimerManager().ClearTimer(ControlTimerHandle);
-	GetWorldTimerManager().ClearTimer(LookFreezeTimerHandle);
-
-	UE_LOG(LogTemp, Warning, TEXT("All Debuffs Cleared!"));
-}
-
+//텔레포트
 void ADrone::AddTeleport()
 {
 	HasTeleport = true;
+}
+void ADrone::UseTeleport()
+{
+	if (HasTeleport) {
+		if (TeleportCoordinate == FVector::ZeroVector) {
+			TeleportCoordinate = GetActorLocation();
+			UE_LOG(LogTemp, Warning, TEXT("TeleportCoordinate has set - %f %f %f"), TeleportCoordinate.X, TeleportCoordinate.Y, TeleportCoordinate.Z);
+		}
+		else {
+			SetActorLocation(TeleportCoordinate);
+			MovementComp->StopMovementImmediately();
+			CurrentDirection = FVector::ZeroVector;
+			HasTeleport = false;
+			TeleportCoordinate = FVector::ZeroVector;
+			UE_LOG(LogTemp, Warning, TEXT("Teleport Completed - %f %f %f"), TeleportCoordinate.X, TeleportCoordinate.Y, TeleportCoordinate.Z);
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("Cannot Use Teleport"));
+	}
 }
 
 void ADrone::ApplyImpulseVelocity(FVector Impulse)
@@ -508,48 +438,17 @@ void ADrone::ApplyImpulseVelocity(FVector Impulse)
 	CurrentDirection = FVector::Zero();
 }
 
-/*
-void ADrone::AddBattery(float Amount)
-{
-	CurrentBattery = FMath::Clamp(CurrentBattery + Amount, 0.0f, MaxBattery);
-}*/
 
 //운석 충돌 로직
 void ADrone::OnDroneHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (OtherActor && OtherActor->ActorHasTag("Meteor"))
-	{
-		if (bHasShield)
-		{
-			// 쉴드가 있으면 쉴드만 파괴하고 운석 제거
-			SetShield(false);
-			OtherActor->Destroy();
-			UE_LOG(LogTemp, Warning, TEXT("Shield Blocked Meteor!"));
-		}
-		else
-		{
-			// 쉴드 없으면 게임 오버
-			HandleGameOver();
-		}
-	}
+	UGameplayStatics::PlaySound2D(GetWorld(), CrushSound);
 }
 void ADrone::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
 
 	if (!OtherActor) return;
-
-	if (OtherActor->ActorHasTag("Package"))
-	{
-		if (IsValid(GM))
-		{
-			if (GM->CurrentHUD)
-			{
-				FString Message = AttachedPackage ? TEXT("Press F to Drop") : TEXT("Press F to Pickup");
-				GM->CurrentHUD->SetInteractionPrompt(true, Message);
-			}
-		}
-	}
 
 	IADInteractable* Interactable = Cast<IADInteractable>(OtherActor);
 	if (Interactable)
@@ -571,56 +470,6 @@ void ADrone::NotifyActorEndOverlap(AActor* OtherActor)
 				GM->CurrentHUD->SetInteractionPrompt(false, TEXT(""));
 			}
 		}
-	}
-}
-void ADrone::HandleGameOver()
-{
-	UE_LOG(LogTemp, Error, TEXT("GAME OVER! Hit by Meteor."));
-
-	// 드론 조작 금지
-	DisableInput(Cast<APlayerController>(GetController()));
-	//CurrentVelocity = FVector::ZeroVector;
-	SetActorHiddenInGame(true);
-
-	if (AttachedPackage)
-	{
-		AttachedPackage->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-		if (auto* Mesh = Cast<UPrimitiveComponent>(AttachedPackage->GetRootComponent()))
-			Mesh->SetSimulatePhysics(true);
-	}
-	GetWorldTimerManager().SetTimer(GameOverTimerHandle, this, &ADrone::DelayedGameOver, 2.0f, false);
-
-	AApocalypseGameStateBase* GS = GetWorld()->GetGameState<AApocalypseGameStateBase>();
-	if (IsValid(GS)) {
-		GS->SetNotPlaying();
-	}
-}
-void ADrone::DelayedGameOver()
-{
-	if (IsValid(GM))
-	{
-		GM->EndGame(false);
-	}
-}
-
-void ADrone::UseItem()
-{
-	if (HasTeleport) {
-		if (TeleportCoordinate == FVector::ZeroVector) {
-			TeleportCoordinate = GetActorLocation();
-			UE_LOG(LogTemp, Warning, TEXT("TeleportCoordinate has set - %f %f %f"), TeleportCoordinate.X, TeleportCoordinate.Y, TeleportCoordinate.Z);
-		}
-		else {
-			SetActorLocation(TeleportCoordinate);
-			MovementComp->StopMovementImmediately();
-			CurrentDirection = FVector::ZeroVector;
-			HasTeleport = false;
-			TeleportCoordinate = FVector::ZeroVector;
-			UE_LOG(LogTemp, Warning, TEXT("Teleport Completed - %f %f %f"), TeleportCoordinate.X, TeleportCoordinate.Y, TeleportCoordinate.Z);
-		}
-	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("Cannot Use Teleport"));
 	}
 }
 
@@ -650,6 +499,7 @@ TArray<FEffectUIStatus> ADrone::GetActiveEffectsStatus() const
 		ActiveEffects.Add(Status);
 	}
 
+	/*
 	// 3. 시야 고정 효과 체크
 	if (TimerManager.IsTimerActive(LookFreezeTimerHandle))
 	{
@@ -658,7 +508,7 @@ TArray<FEffectUIStatus> ADrone::GetActiveEffectsStatus() const
 		Status.TimeRemaining = TimerManager.GetTimerRemaining(LookFreezeTimerHandle);
 		Status.ProgressRatio = Status.TimeRemaining / LookFreezeMaxDuration;
 		ActiveEffects.Add(Status);
-	}
+	}*/
 
 	// 4. 중력 효과 체크
 	if (TimerManager.IsTimerActive(GravityTimerHandle))

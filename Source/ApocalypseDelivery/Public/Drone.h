@@ -7,6 +7,7 @@
 
 class UFloatingPawnMovement;
 class AApocalypseGameMode;
+class AApocalypseGameStateBase;
 class UPhysicsConstraintComponent;
 
 // UI로 넘겨줄 상태변화 데이터 구조체 선언
@@ -45,26 +46,14 @@ class APOCALYPSEDELIVERY_API ADrone : public APawn
 public:
 	ADrone();
 
-    UPROPERTY(BlueprintReadOnly, Category = "Status")
-    bool bHasShield = false;
-
-    //아이템 효과 적용 함수
+    //속도 효과
     UFUNCTION(BlueprintCallable)
     void SetTemporarySpeed(float Multiplier, float Duration);
-    void SetShield(bool bEnable);
     
-    //조작 전환 아이템
-    /*bool bIsReverseControl = false;
-    UFUNCTION(BlueprintCallable)
-    void SetReverseControl(float Duration);*/
+    //조작 효과
     float ControlMultiplier;
     UFUNCTION(BlueprintCallable)
     void SetControlMultiplier(float Multiplier, float Duration);
-
-    //화면 고정 아이템
-    bool bIsLookFrozen = false;
-    UFUNCTION(BlueprintCallable)
-    void SetLookFreeze(float Duration);
 
     //중력 효과
     bool IsGravitated;
@@ -74,32 +63,21 @@ public:
     //순간 속도 적용
     void ApplyImpulseVelocity(FVector Impulse);
 
-    //스케일 적용
+    //스케일 효과
     UFUNCTION(BlueprintCallable)
     void SetTemporalScale(float ScaleValue, float CameraDistanceRatio, float Duration);
 
-    //입력 딜레이 적용
+    //입력 딜레이 효과
     UFUNCTION(BlueprintCallable)
     void SetDelayedInput(float MovementDelayRatio, float RotationDelayRatio, float Duration);
-
-    // 모든 상태 이상 초기화
-    void ClearAllDebuffs();
 
     //텔레포트 추가
     UFUNCTION(BlueprintCallable)
     void AddTeleport();
+    bool ReadyToSetTeleport() { return HasTeleport && TeleportCoordinate == FVector::ZeroVector; };;
+    bool ReadyToTeleport() { return HasTeleport && !(TeleportCoordinate == FVector::ZeroVector); };
 
-    /*
-    // 배터리 회복
-    void AddBattery(float Amount);
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
-    float MaxBattery = 100.0f;
-    UPROPERTY(BlueprintReadWrite, Category = "Status")
-    float CurrentBattery;*/
-
-    FORCEINLINE FVector GetCurrentVelocity() const { return GetVelocity(); }//return CurrentVelocity; }
-    FORCEINLINE AActor* GetAttachedPackage() const {return AttachedPackage; }
-    FORCEINLINE void SetAttachedPackage(AActor* NewPackage) { AttachedPackage = NewPackage; }
+    FORCEINLINE FVector GetCurrentVelocity() const { return GetVelocity(); }
 
     void ResetSpeed();
     void HandleGameOver();
@@ -141,6 +119,10 @@ protected:
     virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+    //택배 상자
+    UPROPERTY(EditAnywhere, Category = "Spawning")
+    TSubclassOf<AActor> PackageClass;
+
     // 컴포넌트
     UPROPERTY(VisibleAnywhere, Category = "Components")
     class UBoxComponent* BoxComp;
@@ -163,16 +145,6 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     class UPhysicsConstraintComponent* PhysicsConstraint;
 
-    // 비행/이동 변수
-    //UPROPERTY(EditAnywhere, Category = "Movement")
-    //float MoveSpeed = 600.f;
-
-    //UPROPERTY(EditAnywhere, Category = "Movement")
-    //float RotationSpeed = 100.f;
-
-    //UPROPERTY(EditAnywhere, Category = "Movement")
-    //float UpDownSpeed = 800.0f;
-
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
     float VelocityTiltRatio;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
@@ -192,13 +164,10 @@ protected:
     void Look(const FInputActionValue& Value);
     void BeginRolling(const FInputActionValue& Value);
     void EndRolling(const FInputActionValue& Value);
-    void Pickup(const FInputActionValue& Value);
 
     // 배달
     UPROPERTY(VisibleAnywhere, Category = "Interaction")
     class USphereComponent* InteractionSphere; // 상자 감지 영역
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
-    AActor* AttachedPackage;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
     float HoldingDistance;
 
@@ -209,18 +178,16 @@ protected:
     virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
     virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
 
-    //캐릭터 죽으면 바로 종료 UI 문제
-    void DelayedGameOver();
-    FTimerHandle GameOverTimerHandle;
-
     //텔레포트
     bool HasTeleport;
     FVector TeleportCoordinate;
-    void UseItem();
+    void UseTeleport();
 
-    //드론 이동 SFX
+    //드론 SFX
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
     USoundBase* DroneSound;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+    USoundBase* CrushSound;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
     float SoundMuliplier;
     UPROPERTY()
@@ -230,32 +197,16 @@ protected:
 
 private:
     FVector MovementInput = FVector::ZeroVector;
-    //FRotator RotationInput = FRotator::ZeroRotator;
     bool IsMoving;
     FVector DesiredDirection;
     FVector CurrentDirection;
     bool IsRolling;
-    bool CanMove;
 
-    /*
-    // 충돌 및 상태 관리를 위한 변수 유지
-    float VerticalVelocity = 0.0f;
-    float CapsuleHalfHeight;
-    bool bIsOnGround = false;
-
-    
-    */
-    //조작 방해 아이템
-    //FTimerHandle ReverseTimerHandle;
-    //void ResetReverseControl();
+    //조작 효과
     FTimerHandle ControlTimerHandle;
     void ResetControlMultiplier();
 
-    //시야 고정 아이템
-    FTimerHandle LookFreezeTimerHandle;
-    void ResetLookFreeze();
-
-    // 효과 지속 시간 관리
+    //속도 효과
     FTimerHandle SpeedTimerHandle;
     float OriginalSpeed;
     FTimerHandle DeliveryBlockTimerHandle;
@@ -276,6 +227,7 @@ private:
     void ResetDelayedInput();
 
     AApocalypseGameMode* GM;
+    AApocalypseGameStateBase* GS;
 
     //위젯에 표시할 값 저장
     float SpeedEffectMaxDuration;

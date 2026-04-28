@@ -82,8 +82,6 @@ protected:
 
 	void PlayOverlapEffects();
 
-	void ShowPickupUI(ADrone* Drone);
-
 	UFUNCTION(BlueprintNativeEvent)
 	void ApplyEffect(ADrone* Drone);
 	virtual void ApplyEffect_Implementation(ADrone* Drone);
