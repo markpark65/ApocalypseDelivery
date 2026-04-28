@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "PatrolObstacle.h"
@@ -33,6 +33,20 @@ void APatrolObstacle::BeginPlay()
 	Super::BeginPlay();
 	CurrentDistance = 0.0f;
 
+    if (MovementSound)
+    {
+        MovementAudioComp = UGameplayStatics::SpawnSoundAttached(MovementSound, MeshComp);
+    }
+
+    if (WarningSound)
+    {
+        WarningAudioComp = UGameplayStatics::SpawnSoundAttached(WarningSound, MeshComp);
+        if (WarningAudioComp)
+        {
+            WarningAudioComp->Stop();
+        }
+    }
+
     MovementAudioComp = UGameplayStatics::SpawnSoundAttached(MovementSound,MeshComp);
     WarningAudioComp = UGameplayStatics::SpawnSoundAttached(WarningSound, MeshComp);
     WarningAudioComp->Stop();
@@ -49,8 +63,12 @@ void APatrolObstacle::StartWarning(UPrimitiveComponent* OverlappedComponent, AAc
 
 void APatrolObstacle::EndWarning(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-    if (OtherActor->IsA(ADrone::StaticClass()) && (WarningAudioComp->IsPlaying())){
+    if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(WarningAudioComp))
+    {
+        if (WarningAudioComp->IsPlaying())
+        {
             WarningAudioComp->Stop();
+        }
     }
     
 }
