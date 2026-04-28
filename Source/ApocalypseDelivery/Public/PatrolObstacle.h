@@ -7,6 +7,7 @@
 #include "PatrolObstacle.generated.h"
 
 class USplineComponent;
+class USphereComponent;
 UCLASS()
 class APOCALYPSEDELIVERY_API APatrolObstacle : public AActor
 {
@@ -15,6 +16,9 @@ class APOCALYPSEDELIVERY_API APatrolObstacle : public AActor
 public:	
 	// Sets default values for this actor's properties
 	APatrolObstacle();
+
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
 
 protected:
 	// Called when the game starts or when spawned
@@ -26,15 +30,31 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Patrol")
 	UStaticMeshComponent* MeshComp;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Patrol")
+	USphereComponent* WarningBound;
+
 	UPROPERTY(EditAnywhere, Category = "Patrol")
 	float MovementSpeed;
 
 	UPROPERTY(EditAnywhere, Category = "Patrol")
 	bool IsLoop = true;          // 순환 여부
 
+	//드론 이동 SFX
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundBase* MovementSound;
+	UPROPERTY()
+	UAudioComponent* MovementAudioComp;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundBase* WarningSound;
+	UPROPERTY()
+	UAudioComponent* WarningAudioComp;
+
+	UFUNCTION()
+	void StartWarning(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void EndWarning(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	
+
 	float CurrentDistance;
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 };
