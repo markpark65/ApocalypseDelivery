@@ -11,12 +11,12 @@ void UMinimapWidget::NativeConstruct()
 
     // 마커 기본 색상 설정 (BP에서 텍스처를 지정해도 되고, 이 색상만 써도 됩니다)
     if (DroneMarker)   DroneMarker->SetColorAndOpacity(FLinearColor(0.1f, 1.0f, 0.2f));   // 초록
-    if (TargetMarker)  TargetMarker->SetColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.0f));  // 노랑
-    if (PackageMarker) PackageMarker->SetColorAndOpacity(FLinearColor(0.2f, 0.75f, 1.0f));// 하늘색
+    //if (TargetMarker)  TargetMarker->SetColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.0f));  // 노랑
+    //if (PackageMarker) PackageMarker->SetColorAndOpacity(FLinearColor(0.2f, 0.75f, 1.0f));// 하늘색
 
     // 목적지·화물은 정보가 들어오기 전까지 숨김
-    if (TargetMarker)  TargetMarker->SetVisibility(ESlateVisibility::Hidden);
-    if (PackageMarker) PackageMarker->SetVisibility(ESlateVisibility::Hidden);
+    //if (TargetMarker)  TargetMarker->SetVisibility(ESlateVisibility::Hidden);
+    //if (PackageMarker) PackageMarker->SetVisibility(ESlateVisibility::Hidden);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ void UMinimapWidget::ApplyBackgroundResource(UObject* Resource)
 // 마커 갱신
 // ────────────────────────────────────────────────────────────────────────────
 
-void UMinimapWidget::UpdateMarkers(FVector DroneWorldPos, bool bHasTarget, FVector TargetWorldPos, bool bHasPackage, FVector PackageWorldPos)
+void UMinimapWidget::UpdateMarkers(FVector DroneWorldPos/*, bool bHasTarget, FVector TargetWorldPos, bool bHasPackage, FVector PackageWorldPos*/)
 {
     APawn* PlayerPawn = GetOwningPlayerPawn();
     if (!PlayerPawn || !MinimapBackground || !MarkerCanvas) return;
@@ -76,8 +76,8 @@ void UMinimapWidget::UpdateMarkers(FVector DroneWorldPos, bool bHasTarget, FVect
     PlaceMarker(DroneMarker, FVector2D(HalfSize, HalfSize), true);
 
     // 2. 목적지 및 화물 마커 (드론 기준 상대 위치)
-    PlaceMarker(TargetMarker, WorldToMinimapPos(TargetWorldPos, DroneWorldPos), bHasTarget);
-    PlaceMarker(PackageMarker, WorldToMinimapPos(PackageWorldPos, DroneWorldPos), bHasPackage);
+    //PlaceMarker(TargetMarker, WorldToMinimapPos(TargetWorldPos, DroneWorldPos), bHasTarget);
+    //PlaceMarker(PackageMarker, WorldToMinimapPos(PackageWorldPos, DroneWorldPos), bHasPackage);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
