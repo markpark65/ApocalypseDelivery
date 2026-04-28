@@ -14,22 +14,17 @@ struct FStageRecord {
     UPROPERTY(BlueprintReadWrite)
     TArray<float> Records;
 };
+
 UCLASS()
 class APOCALYPSEDELIVERY_API UApocalypseGameInstance : public UGameInstance
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 public:
     virtual void Init() override
     {
         Super::Init();
         // 3개 스테이지 슬롯 미리 생성
         DeliveryRecords.SetNum(3);
-        //테스트용 임의 값
-        DeliveryRecords[0].Add(ElapsedTime);
-        DeliveryRecords[0].Add(10);
-        //--------------------------
-        DeliveryRecords.Sort();
-        if (DeliveryRecords.Num() > 10) DeliveryRecords.SetNum(10);
     }
 
     UFUNCTION(BlueprintCallable)
@@ -85,3 +80,4 @@ protected:
 private:
     UPROPERTY()
     class UUserWidget* CurrentLoadingWidget;
+};
