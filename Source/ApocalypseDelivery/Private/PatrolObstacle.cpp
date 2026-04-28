@@ -2,7 +2,12 @@
 
 
 #include "PatrolObstacle.h"
+#include "Drone.h"
+
 #include "Components/SplineComponent.h"
+#include "Components/AudioComponent.h"
+#include "Components/SphereComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 APatrolObstacle::APatrolObstacle()
@@ -15,6 +20,9 @@ APatrolObstacle::APatrolObstacle()
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetupAttachment(RootComponent);
 
+    WarningBound = CreateDefaultSubobject<USphereComponent>(TEXT("WarningBound"));
+    WarningBound->SetupAttachment(MeshComp);
+
 	MovementSpeed = 200.0f;
 	IsLoop = true;
 }
@@ -24,6 +32,27 @@ void APatrolObstacle::BeginPlay()
 {
 	Super::BeginPlay();
 	CurrentDistance = 0.0f;
+
+    MovementAudioComp = UGameplayStatics::SpawnSoundAttached(MovementSound,MeshComp);
+    WarningAudioComp = UGameplayStatics::SpawnSoundAttached(WarningSound, MeshComp);
+    WarningAudioComp->Stop();
+    WarningBound->OnComponentBeginOverlap.AddDynamic(this, &APatrolObstacle::StartWarning);
+    WarningBound->OnComponentEndOverlap.AddDynamic(this, &APatrolObstacle::EndWarning);
+}
+
+void APatrolObstacle::StartWarning(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+    if (OtherActor->IsA(ADrone::StaticClass()) && !(WarningAudioComp->IsPlaying())) {
+            WarningAudioComp->Play();
+    }
+}
+
+void APatrolObstacle::EndWarning(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+    if (OtherActor->IsA(ADrone::StaticClass()) && (WarningAudioComp->IsPlaying())){
+            WarningAudioComp->Stop();
+    }
+    
 }
 
 // Called every frame
@@ -46,4 +75,3 @@ void APatrolObstacle::Tick(float DeltaTime)
 
     MeshComp->SetWorldLocationAndRotation(NewLocation, NewRotation);
 }
-
