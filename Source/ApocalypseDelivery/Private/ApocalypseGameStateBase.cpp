@@ -1,6 +1,8 @@
 ﻿//ApocalypseGameStateBase.cpp
 #include "ApocalypseGameStateBase.h"
+#include "ApocalypseGameMode.h"
 #include "ApocalypseGameInstance.h"
+#include "ApocalypseHUD.h"
 
 AApocalypseGameStateBase::AApocalypseGameStateBase()
 {
@@ -23,7 +25,7 @@ void AApocalypseGameStateBase::Tick(float DeltaTime)
 		//UE_LOG(LogTemp, Warning, TEXT("TimeElapsed: %f"), TimeElapsed);
 
 		if (TimeElapsed - LastBroadcastedTime >= BroadcastInterval) {
-			OnTimeUpdated.Broadcast(TimeElapsed);
+			GetWorld()->GetAuthGameMode<AApocalypseGameMode>()->CurrentHUD->UpdateTimer((int32)TimeElapsed/60, (int32)TimeElapsed % 60);
 			LastBroadcastedTime = TimeElapsed;
 		}
 	}
@@ -37,7 +39,7 @@ void AApocalypseGameStateBase::SetPlaying() {
 void AApocalypseGameStateBase::SetNotPlaying() {
 	IsPlaying = false;
 	UApocalypseGameInstance * GI = GetGameInstance<UApocalypseGameInstance>();
-	if(IsValid(GI)) GI->UpdateRecord(TimeElapsed);
+	if(IsValid(GI)) GI->UpdateRecord(0, TimeElapsed); //need to change to currentlevel
 }
 float AApocalypseGameStateBase::GetTimeElapsed() {
 	return TimeElapsed;

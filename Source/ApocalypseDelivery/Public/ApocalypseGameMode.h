@@ -75,10 +75,7 @@ public:
 
     FORCEINLINE bool IsTimerActive() const { return bIsTimerActive; }
 
-    ADeliveryPlatform* GetRandomAvailablePlatform();
-
-    void TransitionWithLoading(bool bIsVictory);
-
+    //ADeliveryPlatform* GetRandomAvailablePlatform();
 protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
@@ -93,11 +90,12 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
     int32 CurrentStage = 1;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
-    int32 CurrentWave = 1;
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
+    //int32 CurrentWave = 1;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
-    int32 MaxWavesPerStage = 3;
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
+    //int32 MaxWavesPerStage = 3;
+    int32 NumberOfDeliveries;
 
     UPROPERTY(EditAnywhere, Category = "Sound")
     class USoundBase* BackgroundMusic;
@@ -109,7 +107,7 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameLogic")
     float TimeLimit = 180.0f;
 
-    float CurrentTimeLeft;
+    //float CurrentTimeLeft;
     bool bIsTimerActive = false;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WaveSystem")

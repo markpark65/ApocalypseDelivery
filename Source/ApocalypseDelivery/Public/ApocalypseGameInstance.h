@@ -7,28 +7,54 @@
 #include "Engine/GameInstance.h"
 #include "ApocalypseGameInstance.generated.h"
 
-/**
- * 
- */
+USTRUCT(BlueprintType)
+struct FStageRecord {
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadWrite)
+    TArray<float> Records;
+};
+
 UCLASS()
 class APOCALYPSEDELIVERY_API UApocalypseGameInstance : public UGameInstance
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 public:
-
-    UFUNCTION(BlueprintCallable)
-    void UpdateRecord(float ElapsedTime)
+    virtual void Init() override
     {
-        DeliveryRecords.Add(ElapsedTime);
-        //테스트용 임의 값
-        DeliveryRecords.Add(10);
-        //--------------------------
-        DeliveryRecords.Sort();
-        if (DeliveryRecords.Num() > 10) DeliveryRecords.SetNum(10);
+        Super::Init();
+        // 3개 스테이지 슬롯 미리 생성
+        DeliveryRecords.SetNum(3);
     }
 
     UFUNCTION(BlueprintCallable)
-    TArray<float> GetRecord() const
+    void UpdateRecord(int32 Stage, float ElapsedTime)
+    {
+        //DeliveryRecords[Stage].Records.Add(ElapsedTime);
+        //테스트용 임의 값
+        DeliveryRecords[0].Records.Add(10);
+        DeliveryRecords[0].Records.Add(20);
+        DeliveryRecords[0].Records.Add(30);
+        DeliveryRecords[0].Records.Add(40);
+        DeliveryRecords[0].Records.Add(50);
+        DeliveryRecords[0].Records.Add(60);
+        DeliveryRecords[1].Records.Add(50);
+        DeliveryRecords[1].Records.Add(60);
+        DeliveryRecords[2].Records.Add(50);
+        DeliveryRecords[2].Records.Add(60);
+        //--------------------------
+        DeliveryRecords[0].Records.Sort();
+        DeliveryRecords[1].Records.Sort();
+        DeliveryRecords[2].Records.Sort();
+        if (DeliveryRecords[0].Records.Num() > 10) DeliveryRecords[0].Records.SetNum(10);
+        if (DeliveryRecords[1].Records.Num() > 10) DeliveryRecords[1].Records.SetNum(10);
+        if (DeliveryRecords[2].Records.Num() > 10) DeliveryRecords[2].Records.SetNum(10);
+        //DeliveryRecords[Stage].Sort();
+        //if (DeliveryRecords[Stage].Records.Num() > 10) DeliveryRecords[Stage].Records.SetNum(10);
+    }
+
+    UFUNCTION(BlueprintCallable)
+    TArray<FStageRecord> GetRecord() const
     {
         return DeliveryRecords;
     }
@@ -53,7 +79,7 @@ public:
 
 protected:
     UPROPERTY(BlueprintReadWrite)
-    TArray<float> DeliveryRecords; // 배달 기록 목록
+    TArray<FStageRecord> DeliveryRecords; // 배달 기록 목록
 
 private:
     UPROPERTY()
