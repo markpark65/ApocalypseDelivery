@@ -28,7 +28,7 @@ void AApocalypseGameMode::BeginPlay()
     CurrentPackage = nullptr;
     bIsTimerActive = false;
 
-    CurrentTimeLeft = TimeLimit;
+    //CurrentTimeLeft = TimeLimit;
     bIsTimerActive = false;
     if (BackgroundMusic)
     {
@@ -42,17 +42,18 @@ void AApocalypseGameMode::BeginPlay()
         {
             CurrentHUD->AddToViewport();//레벨 전환 시 startquest 활성
             // 초기값 설정
-            CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, TargetDeliveries);
+            CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, NumberOfDeliveries);
 
-            int32 Mins = FMath::FloorToInt(CurrentTimeLeft / 60.0f);
-            int32 Secs = FMath::FloorToInt(CurrentTimeLeft) % 60;
-            CurrentHUD->UpdateTimer(Mins, Secs);
+            //int32 Mins = FMath::FloorToInt(CurrentTimeLeft / 60.0f);
+            //int32 Secs = FMath::FloorToInt(CurrentTimeLeft) % 60;
+            //CurrentHUD->UpdateTimer(Mins, Secs);
+            CurrentHUD->UpdateTimer(0, 0);
         }
     }
     PlayerDrone = Cast<ADrone>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-        // 레벨에 배치된 Spawner 찾기
+    // 레벨에 배치된 Spawner 찾기
     Spawner = Cast<AMeteorSpawner>(UGameplayStatics::GetActorOfClass(GetWorld(), AMeteorSpawner::StaticClass()));
-    
+
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
     if (PC)
     {
@@ -66,6 +67,10 @@ void AApocalypseGameMode::BeginPlay()
         PC->SetInputMode(InputMode);
     }
     ItemSpawner = Cast<AItemSpawner>(UGameplayStatics::GetActorOfClass(GetWorld(), AItemSpawner::StaticClass()));
+
+    TArray<AActor*> FoundPlatforms;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADeliveryPlatform::StaticClass(), FoundPlatforms);
+    NumberOfDeliveries = FoundPlatforms.Num();
 }
 
 void AApocalypseGameMode::StartQuest()
@@ -91,7 +96,7 @@ void AApocalypseGameMode::StartQuest()
         CurrentPackage = Cast<ADeliveryPackage>(FoundPackages[0]);
     }
 
-    CurrentTargetPlatform = GetRandomAvailablePlatform();
+    //CurrentTargetPlatform = GetRandomAvailablePlatform();
     CurrentPlatform = CurrentTargetPlatform; // 미니맵용 변수 재설정
 
     /*
@@ -158,7 +163,7 @@ void AApocalypseGameMode::Tick(float DeltaTime)
         EndGame(false);
     }
     */
-    if (bIsTimerActive && CurrentTimeLeft > 0)
+    /*if (bIsTimerActive && CurrentTimeLeft > 0)
     {
         CurrentTimeLeft -= DeltaTime;
 
@@ -177,8 +182,9 @@ void AApocalypseGameMode::Tick(float DeltaTime)
             bIsTimerActive = false;
             EndGame(false); // 실패 처리
         }
-    }
+    }*/
 
+    
     if (PlayerDrone && CurrentHUD)
     {
         //float BatteryPct = PlayerDrone->CurrentBattery / PlayerDrone->MaxBattery;
@@ -291,7 +297,7 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     }
     //------------
     DeliveredCount++;
-    CurrentWave++;
+    //CurrentWave++;
 
     // 다음 StartQuest 전까지 미니맵 마커를 비워둔다.
     CurrentPackage = nullptr;
@@ -304,10 +310,15 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
         TargetPlatform->MarkAsUsed();
     }
     
-    if (CurrentWave > MaxWavesPerStage)
+    if (DeliveredCount >= NumberOfDeliveries)
     {
         CurrentStage++;
-        CurrentWave = 1;
+        if (CurrentStage > 3) // 모든 스테이지 클리어 시
+        {
+            bIsTimerActive = false;
+            EndGame(true);
+        }
+        //CurrentWave = 1;
         //UpdateDifficulty();
         if (CurrentHUD)
         {
@@ -323,11 +334,11 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     {
         PlayerDrone->AddBattery(PlayerDrone->MaxBattery);
     }*/
-    if (CurrentStage > MaxWavesPerStage) // 모든 스테이지 클리어 시
+    /*if (CurrentStage > 3) // 모든 스테이지 클리어 시
     {
         bIsTimerActive = false;
         EndGame(true);
-    }
+    }*/
     /*
     if (PlayerDrone)
     {
@@ -346,10 +357,10 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     if(CurrentHUD)
     {
         CurrentHUD->ShowDeliverySuccessUI();
-        FString StageInfo = FString::Printf(TEXT("%d - %d"), CurrentStage, CurrentWave);
+        FString StageInfo = FString::Printf(TEXT("%d - %d"), CurrentStage, 99);
         CurrentHUD->UpdateStageText(StageInfo);
         CurrentHUD->UpdateStats(1.0f, 0.0f);
-        CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, TargetDeliveries);
+        CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, NumberOfDeliveries);
         StartQuest();
         /*
         if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
@@ -371,11 +382,11 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
         }
         */
     }
-
+    /*
     CurrentTimeLeft = TimeLimit;
     int32 Mins = FMath::FloorToInt(CurrentTimeLeft / 60.0f);
     int32 Secs = FMath::FloorToInt(CurrentTimeLeft) % 60;
-    CurrentHUD->UpdateTimer(Mins, Secs);
+    CurrentHUD->UpdateTimer(Mins, Secs);*/
 }
 
 void AApocalypseGameMode::UpdateDifficulty()
@@ -385,12 +396,13 @@ void AApocalypseGameMode::UpdateDifficulty()
         const FWaveData& CurrentWaveData = WaveSettings[CurrentWaveIndex];
 
         // 시간 제한 적용
-        TimeLimit = CurrentWaveData.TimeLimit;
-        CurrentTimeLeft = TimeLimit;
+        //TimeLimit = CurrentWaveData.TimeLimit;
+        //CurrentTimeLeft = TimeLimit;
 
         // 목표 배달 수 적용
         TargetDeliveries = CurrentWaveData.TargetDeliveries;
 
+        /*
         // 운석 스패너 설정
         if (Spawner)
         {
@@ -404,7 +416,7 @@ void AApocalypseGameMode::UpdateDifficulty()
             ItemSpawner->SpawnMines(CurrentWaveData.MineSpawnCount);
             ItemSpawner->SpawnDebuffs(CurrentWaveData.DebuffItemCount);
             ItemSpawner->SpawnBuffs(CurrentWaveData.BuffItemCount);
-        }
+        }*/
 
         UE_LOG(LogTemp, Warning, TEXT("Wave %d Started! Target: %d"), CurrentWaveIndex + 1, TargetDeliveries);
     }
@@ -480,6 +492,7 @@ void AApocalypseGameMode::MoveToNextLevel()
     UGameplayStatics::OpenLevel(GetWorld(), NextLevelName);
 }
 
+/*
 ADeliveryPlatform* AApocalypseGameMode::GetRandomAvailablePlatform()
 {
     TArray<AActor*> FoundPlatforms;
@@ -500,4 +513,4 @@ ADeliveryPlatform* AApocalypseGameMode::GetRandomAvailablePlatform()
         return AvailablePlatforms[FMath::RandRange(0, AvailablePlatforms.Num() - 1)];
     }
     return nullptr;
-}
+}*/

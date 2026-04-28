@@ -2,10 +2,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
 #include "GameFramework/GameStateBase.h"
 #include "ApocalypseGameStateBase.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimeUpdated, float, TimeElapsed);
+class AApocalypseHUD;
 
 UCLASS()
 class APOCALYPSEDELIVERY_API AApocalypseGameStateBase : public AGameStateBase
@@ -14,8 +15,6 @@ class APOCALYPSEDELIVERY_API AApocalypseGameStateBase : public AGameStateBase
 
 public:
 	AApocalypseGameStateBase();
-
-	FOnTimeUpdated OnTimeUpdated;
 
 	void SetNotPlaying();
 	void SetPlaying();

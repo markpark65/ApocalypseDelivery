@@ -42,7 +42,7 @@ void APatrolObstacle::BeginPlay()
 
 void APatrolObstacle::StartWarning(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (OtherActor->IsA(ADrone::StaticClass()) && !(WarningAudioComp->IsPlaying())) {
+    if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(WarningAudioComp) && !(WarningAudioComp->IsPlaying())) {
             WarningAudioComp->Play();
     }
 }
