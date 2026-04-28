@@ -31,10 +31,31 @@ void AApocalypseDroneController::BeginPlay()
 
 void AApocalypseDroneController::SetCameraFade(float duration)
 {
-	PlayerCameraManager->StartCameraFade(0, 1, 1, FLinearColor::Black, true, true);
+	if (IsValid(PlayerCameraManager)) {
+		PlayerCameraManager->StartCameraFade(0, 1, 1, FLinearColor::Black, true, true);
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("CameraManager not valid"));
+	}
 	GetWorld()->GetTimerManager().SetTimer(FadeTimerHandle, this, &AApocalypseDroneController::ResetCameraFade, duration, false);
 }
 void AApocalypseDroneController::ResetCameraFade()
 {
 	PlayerCameraManager->StartCameraFade(1, 0,1, FLinearColor::Black, true, false);
+}
+void AApocalypseDroneController::ShakeCamera(float ImpactScale)
+{
+	UE_LOG(LogTemp, Warning, TEXT("ShakeCamera Called!"));
+	if (IsValid(PlayerCameraManager)) {
+		if (IsValid(ShakeBase)) {
+			PlayerCameraManager->StartCameraShake(ShakeBase, ImpactScale);
+		}
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("ShakeBase not valid"));
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("CameraManager not valid"));
+	}
+	
 }

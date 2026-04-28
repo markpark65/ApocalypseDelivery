@@ -3,9 +3,12 @@
 
 #include "WindGate.h"
 #include "Drone.h"
+
 #include "Components/CapsuleComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AWindGate::AWindGate()
@@ -33,6 +36,12 @@ void AWindGate::BeginAccelerate(UPrimitiveComponent* OverlappedComponent, AActor
     if (OtherActor->IsA(ADrone::StaticClass()) && OtherComp->IsA(UBoxComponent::StaticClass())) {
 		Target = Cast<ADrone>(OtherActor);
         UE_LOG(LogTemp, Warning, TEXT("Accelerating! - %s"), *(Target->GetName()));
+		UAudioComponent* AudioComp;
+		if (OverlapParticle) UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OverlapParticle, GetActorLocation());
+		if (OverlapSound) {
+			AudioComp = UGameplayStatics::SpawnSound2D(this, OverlapSound, 0.8f, 1.5f);
+			AudioComp->FadeOut(2.0f,0.0f);
+		}
     }
 }
 

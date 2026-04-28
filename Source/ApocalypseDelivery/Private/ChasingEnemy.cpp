@@ -2,6 +2,10 @@
 
 
 #include "ChasingEnemy.h"
+#include "ItemMessageWidget.h"
+#include "Drone.h"
+#include "ApocalypseDroneController.h"
+
 #include "Components/StaticMeshComponent.h"
 //#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
@@ -9,9 +13,6 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SphereComponent.h"
-
-#include "ItemMessageWidget.h"
-#include "Drone.h"
 
 // Sets default values
 AChasingEnemy::AChasingEnemy()
@@ -170,7 +171,17 @@ void AChasingEnemy::ShowPickupUI(ADrone* Drone) {
 
 void AChasingEnemy::ApplyEffect_Implementation(class ADrone* Drone) {
 	//Drone->SetReverseControl(10.0f);
-	if(IsRepulsive) Drone->ApplyImpulseVelocity(GetVelocity());
+	if (IsRepulsive) {
+		Drone->ApplyImpulseVelocity(GetVelocity());
+		AApocalypseDroneController* PC = Cast<AApocalypseDroneController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+		if (IsValid(PC)) {
+			PC->ShakeCamera(GetVelocity().Length());
+		}
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("No Controller!"));
+		}
+		//
+	}
 	PlayOverlapEffects();
 	ShowPickupUI(Drone);
 	Destroy();

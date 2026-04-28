@@ -36,11 +36,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = WindGate)
 	float ImpulseSpeed;
 
+	//이펙트
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	class UParticleSystem* OverlapParticle;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	class USoundBase* OverlapSound;
+
 	UFUNCTION()
 	void BeginAccelerate(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()
 	void EndAccelerate(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	
 
 	ADrone* Target;
 public:	

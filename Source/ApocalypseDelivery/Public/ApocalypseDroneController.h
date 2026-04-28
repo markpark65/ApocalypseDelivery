@@ -41,9 +41,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* IA_Interact;
 
+
+	//카메라 효과
 	UFUNCTION(Blueprintcallable)
 	void SetCameraFade(float duration);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	TSubclassOf<UCameraShakeBase> ShakeBase;
+
+	void ShakeCamera(float ImpactScale);
 protected:
 	virtual void BeginPlay() override;
 

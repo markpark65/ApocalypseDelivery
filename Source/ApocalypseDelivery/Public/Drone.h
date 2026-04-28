@@ -164,14 +164,14 @@ protected:
     class UPhysicsConstraintComponent* PhysicsConstraint;
 
     // 비행/이동 변수
-    UPROPERTY(EditAnywhere, Category = "Movement")
-    float MoveSpeed = 600.f;
+    //UPROPERTY(EditAnywhere, Category = "Movement")
+    //float MoveSpeed = 600.f;
 
-    UPROPERTY(EditAnywhere, Category = "Movement")
-    float RotationSpeed = 100.f;
+    //UPROPERTY(EditAnywhere, Category = "Movement")
+    //float RotationSpeed = 100.f;
 
-    UPROPERTY(EditAnywhere, Category = "Movement")
-    float UpDownSpeed = 800.0f;
+    //UPROPERTY(EditAnywhere, Category = "Movement")
+    //float UpDownSpeed = 800.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
     float VelocityTiltRatio;
@@ -181,6 +181,10 @@ protected:
     float MovementLerpRate;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
     float RollingSpeed;
+
+    //카메라 효과
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float FOVChangeRate;
 
     // 입력 처리 함수
     void BeginMove(const FInputActionValue& Value);
@@ -213,6 +217,16 @@ protected:
     bool HasTeleport;
     FVector TeleportCoordinate;
     void UseItem();
+
+    //드론 이동 SFX
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+    USoundBase* DroneSound;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+    float SoundMuliplier;
+    UPROPERTY()
+    UAudioComponent* AudioComp;
+
+    
 
 private:
     FVector MovementInput = FVector::ZeroVector;
