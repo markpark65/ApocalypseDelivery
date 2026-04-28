@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Blueprint/UserWidget.h"
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "ApocalypseGameInstance.generated.h"
@@ -21,11 +22,6 @@ public:
         DeliveryRecords.Add(ElapsedTime);
         //테스트용 임의 값
         DeliveryRecords.Add(10);
-        DeliveryRecords.Add(20);
-        DeliveryRecords.Add(30);
-        DeliveryRecords.Add(40);
-        DeliveryRecords.Add(50);
-        DeliveryRecords.Add(60);
         //--------------------------
         DeliveryRecords.Sort();
         if (DeliveryRecords.Num() > 10) DeliveryRecords.SetNum(10);
@@ -43,7 +39,19 @@ public:
         return DeliveryRecords.Num();
     }
 
+    // 로딩 화면 위젯 클래스
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+    TSubclassOf<UUserWidget> LoadingWidgetClass;
+
+    // 로딩 화면 표시 함수
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void ShowLoadingScreen();
+
 protected:
     UPROPERTY(BlueprintReadWrite)
     TArray<float> DeliveryRecords; // 배달 기록 목록
+
+private:
+    UPROPERTY()
+    class UUserWidget* CurrentLoadingWidget;
 };

@@ -14,6 +14,7 @@
 #include "Components/AudioComponent.h"
 #include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
+#include <ApocalypseGameInstance.h>
 
 AApocalypseGameMode::AApocalypseGameMode() { PrimaryActorTick.bCanEverTick = true; }
 
@@ -469,6 +470,11 @@ void AApocalypseGameMode::MoveToNextLevel()
     }
 
     UE_LOG(LogTemp, Warning, TEXT("Moving to Level: %s"), *NextLevelName.ToString());
+
+    if (UApocalypseGameInstance* GI = Cast<UApocalypseGameInstance>(GetGameInstance()))
+    {
+        GI->ShowLoadingScreen();
+    }
 
     // 맵 이동 실행
     UGameplayStatics::OpenLevel(GetWorld(), NextLevelName);
