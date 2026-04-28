@@ -80,6 +80,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	TSubclassOf<class UUserWidget> ItemMessageWidgetClass;
 
+	//Warning Effects
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	class USoundBase* WarningSound;
+	UPROPERTY()
+	UAudioComponent* WarningAudioComp;
+
 	void PlayOverlapEffects();
 
 	UFUNCTION(BlueprintNativeEvent)

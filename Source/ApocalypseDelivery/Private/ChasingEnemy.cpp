@@ -6,12 +6,12 @@
 #include "ApocalypseDroneController.h"
 
 #include "Components/StaticMeshComponent.h"
-//#include "Components/SkeletalMeshComponent.h"
+#include "Components/SphereComponent.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "Components/SphereComponent.h"
 
 // Sets default values
 AChasingEnemy::AChasingEnemy()
@@ -38,7 +38,14 @@ void AChasingEnemy::BeginPlay()
 	TargetPlayer = nullptr;
 
 	GetWorld()->GetTimerManager().SetTimer(DetectionTimer, this, &AChasingEnemy::CheckTargetCondition, DetectionInterval, true);
-	//SphereComp->OnComponentHit.AddDynamic(this, &AChasingEnemy::OnCollision);
+	
+	if (IsValid(WarningSound)) {
+		UE_LOG(LogTemp, Warning, TEXT("Attaching Warning sound!"));
+		WarningAudioComp = UGameplayStatics::SpawnSoundAttached(WarningSound, RootComponent);
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("Warning sound not valid!"));
+	}
 }
 
 // Called every frame
@@ -126,23 +133,13 @@ void AChasingEnemy::SetBasePosition()
 	BasePosition = GetActorLocation();
 }
 
-/*
-void AChasingEnemy::OnCollision(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) {
-	UE_LOG(LogTemp, Warning, TEXT("Enemy Collided!"));
-	if (OtherActor->IsA(ADrone::StaticClass())) {
-		UE_LOG(LogTemp, Warning, TEXT("Applying debuff!"));
-		Cast<ADrone>(OtherActor)->SetReverseControl(10.0f);
-	}
-	Destroy();
-}*/
-
 void AChasingEnemy::PlayOverlapEffects() {
 		if (OverlapParticle) UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OverlapParticle, GetActorLocation());
 		if (OverlapSound) UGameplayStatics::PlaySoundAtLocation(this, OverlapSound, GetActorLocation());
 }
 
 void AChasingEnemy::ApplyEffect_Implementation(class ADrone* Drone) {
-	//Drone->SetReverseControl(10.0f);
+	WarningAudioComp->Stop();
 	if (IsRepulsive) {
 		Drone->ApplyImpulseVelocity(GetVelocity());
 		AApocalypseDroneController* PC = Cast<AApocalypseDroneController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
@@ -152,7 +149,6 @@ void AChasingEnemy::ApplyEffect_Implementation(class ADrone* Drone) {
 		else {
 			UE_LOG(LogTemp, Warning, TEXT("No Controller!"));
 		}
-		//
 	}
 	PlayOverlapEffects();
 	Destroy();

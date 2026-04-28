@@ -5,6 +5,7 @@
 #include "ApocalypseGameMode.h"
 #include "ApocalypseGameStateBase.h"
 #include "DeliveryPackage.h"
+#include "DeliveryPlatform.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -158,27 +159,28 @@ void ADrone::BeginPlay()
 	// ── 
 	
 	//시작과 동시에 상자 보유.
-	AActor* Package = GetWorld()->SpawnActor<AActor>(PackageClass, GetActorLocation() - GetActorUpVector() * HoldingDistance, GetActorRotation());
-	UPrimitiveComponent* Target = Cast<UPrimitiveComponent>(Package->GetRootComponent());
-	PhysicsConstraint->SetConstrainedComponents(Cast<UPrimitiveComponent>(RootComponent), NAME_None, Target, NAME_None);
+	if (IsValid(PackageClass)) {
+		AActor* Package = GetWorld()->SpawnActor<AActor>(PackageClass, GetActorLocation() - GetActorUpVector() * HoldingDistance, GetActorRotation());
+		UPrimitiveComponent* Target = Cast<UPrimitiveComponent>(Package->GetRootComponent());
+		PhysicsConstraint->SetConstrainedComponents(Cast<UPrimitiveComponent>(RootComponent), NAME_None, Target, NAME_None);
 
-	PhysicsConstraint->SetLinearXLimit(LCM_Locked, 0.f);
-	PhysicsConstraint->SetLinearYLimit(LCM_Locked, 0.f);
-	PhysicsConstraint->SetLinearZLimit(LCM_Locked, 0.f);
-	PhysicsConstraint->SetAngularSwing1Limit(ACM_Locked, 0.f);
-	PhysicsConstraint->SetAngularSwing2Limit(ACM_Locked, 0.f);
-	PhysicsConstraint->SetAngularTwistLimit(ACM_Locked, 0.f);
+		PhysicsConstraint->SetLinearXLimit(LCM_Locked, 0.f);
+		PhysicsConstraint->SetLinearYLimit(LCM_Locked, 0.f);
+		PhysicsConstraint->SetLinearZLimit(LCM_Locked, 0.f);
+		PhysicsConstraint->SetAngularSwing1Limit(ACM_Locked, 0.f);
+		PhysicsConstraint->SetAngularSwing2Limit(ACM_Locked, 0.f);
+		PhysicsConstraint->SetAngularTwistLimit(ACM_Locked, 0.f);
+	}
 
-	//사운드 미리 세팅
+	//이동사운드 미리 세팅
 	if (IsValid(DroneSound)) {
-		AudioComp = UGameplayStatics::SpawnSound2D(GetWorld(), DroneSound);
-		if (AudioComp)
+		MovementAudioComp = UGameplayStatics::SpawnSound2D(GetWorld(), DroneSound);
+		if (MovementAudioComp)
 		{
-			AudioComp->bIsUISound = false;
-			AudioComp->SetVolumeMultiplier(0.0f);
+			MovementAudioComp->bIsUISound = false;
+			MovementAudioComp->SetVolumeMultiplier(0.0f);
 		}
 	}
-	
 }
 void ADrone::Tick(float DeltaTime)
 {
@@ -236,8 +238,8 @@ void ADrone::Tick(float DeltaTime)
 		CameraComp->FieldOfView = FMath::Lerp(CameraComp->FieldOfView, 90, FOVChangeRate);
 	}
 	//속도에 따른 드론 효과음 조정
-	AudioComp->SetVolumeMultiplier(0.2 + GetVelocity().Length() * SoundMuliplier);
-	AudioComp->SetPitchMultiplier(0.2 + GetVelocity().Length() * SoundMuliplier);
+	MovementAudioComp->SetVolumeMultiplier(0.2 + GetVelocity().Length() * SoundMuliplier);
+	MovementAudioComp->SetPitchMultiplier(0.2 + GetVelocity().Length() * SoundMuliplier);
 }
 
 void ADrone::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -442,7 +444,11 @@ void ADrone::ApplyImpulseVelocity(FVector Impulse)
 //운석 충돌 로직
 void ADrone::OnDroneHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	UGameplayStatics::PlaySound2D(GetWorld(), CrushSound);
+	if (!IsValid(OtherActor)) return;
+	if (OtherActor->IsA(ADeliveryPackage::StaticClass()) || OtherActor->IsA(ADeliveryPlatform::StaticClass())) return;
+	if (IsValid(CrushSound) && (!IsValid(CrushAudioComp) || !CrushAudioComp->IsPlaying())) {
+		CrushAudioComp = UGameplayStatics::SpawnSound2D(GetWorld(), CrushSound);
+	}
 }
 void ADrone::NotifyActorBeginOverlap(AActor* OtherActor)
 {

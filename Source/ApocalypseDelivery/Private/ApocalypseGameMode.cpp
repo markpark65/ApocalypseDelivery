@@ -1,5 +1,6 @@
 ﻿#include "ApocalypseGameMode.h"
 #include "ApocalypseGameStateBase.h"
+#include "ApocalypseGameInstance.h"
 #include "Drone.h"
 #include "DeliveryPackage.h"
 #include "DeliveryPlatform.h"
@@ -20,8 +21,8 @@ void AApocalypseGameMode::BeginPlay()
 {
     Super::BeginPlay();
 
+    GI = GetGameInstance<UApocalypseGameInstance>();
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
-    UApocalypseGameInstance* GI = Cast<UApocalypseGameInstance>(GetGameInstance());
     //첫 실행 시 로딩화면 예외처리
     if (GI && GI->bIsFirstBoot)
     {
@@ -54,6 +55,11 @@ void AApocalypseGameMode::BeginPlay()
     //CurrentTargetPlatform = nullptr;
     //CurrentPackage = nullptr;
 
+    //상자 배달지점 갯수 확인
+    TArray<AActor*> FoundPlatforms;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADeliveryPlatform::StaticClass(), FoundPlatforms);
+    NumberOfDeliveries = FoundPlatforms.Num();
+
     //CurrentTimeLeft = TimeLimit;
     bIsTimerActive = false;
     if (BackgroundMusic)
@@ -69,7 +75,7 @@ void AApocalypseGameMode::BeginPlay()
         {
             CurrentHUD->AddToViewport();//레벨 전환 시 startquest 활성
             // 초기값 설정
-            CurrentHUD->UpdateStatus(CurrentStage, /*CurrentWave,*/ DeliveredCount, NumberOfDeliveries);
+            CurrentHUD->UpdateStatus(GI->CurrentStage, /*CurrentWave,*/ DeliveredCount, NumberOfDeliveries);
 
             //int32 Mins = FMath::FloorToInt(CurrentTimeLeft / 60.0f);
             //int32 Secs = FMath::FloorToInt(CurrentTimeLeft) % 60;
@@ -79,7 +85,6 @@ void AApocalypseGameMode::BeginPlay()
     }
     PlayerDrone = Cast<ADrone>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 
-    APlayerController* PC = GetWorld()->GetFirstPlayerController();
     if (PC)
     {
         PC->bShowMouseCursor = true;
@@ -91,13 +96,8 @@ void AApocalypseGameMode::BeginPlay()
         }
         PC->SetInputMode(InputMode);
     }
-
-    //상자 배달지점 갯수 확인
-    TArray<AActor*> FoundPlatforms;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADeliveryPlatform::StaticClass(), FoundPlatforms);
-    NumberOfDeliveries = FoundPlatforms.Num();
     
-    //레벨별 아이템 필터링
+    //스테이지별 아이템 필터링
     UpdateDifficulty();
 }
 
@@ -333,8 +333,8 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     
     if (DeliveredCount >= NumberOfDeliveries)
     {
-        CurrentStage++;
-        if (CurrentStage > 3) // 모든 스테이지 클리어 시
+        GI->CurrentStage++;
+        if (GI->CurrentStage > 3) // 모든 스테이지 클리어 시
         {
             bIsTimerActive = false;
             EndGame(true);
@@ -368,10 +368,10 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     if(CurrentHUD)
     {
         CurrentHUD->ShowDeliverySuccessUI();
-        FString StageInfo = FString::Printf(TEXT("%d - %d"), CurrentStage, 99);
+        FString StageInfo = FString::Printf(TEXT("%d - %d"), GI->CurrentStage, 99); //뒤에 숫자 지금 안쓰임
         CurrentHUD->UpdateStageText(StageInfo);
         CurrentHUD->UpdateStats(1.0f, 0.0f);
-        CurrentHUD->UpdateStatus(CurrentStage, DeliveredCount, NumberOfDeliveries);
+        CurrentHUD->UpdateStatus(GI->CurrentStage, DeliveredCount, NumberOfDeliveries);
         StartQuest();
 
     }
@@ -380,9 +380,24 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
 
 void AApocalypseGameMode::UpdateDifficulty()
 {
-    if (CurrentStage == 0) {
-        return;
+    UE_LOG(LogTemp, Warning, TEXT("Setting Stage %d!"), GI->CurrentStage);
+    if (GI->CurrentStage < 2) {
+        TArray<AActor*> IntermediateActors;
+        UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Intermediate"), IntermediateActors);
+        UE_LOG(LogTemp, Warning, TEXT("Destroying %d Intermediate actors!"), IntermediateActors.Num());
+        for (AActor* DisableTarget : IntermediateActors) {
+            DisableTarget->Destroy();
+        }
     }
+    if (GI->CurrentStage < 3) {
+        TArray<AActor*> ProActors;
+        UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Pro"), ProActors);
+        UE_LOG(LogTemp, Warning, TEXT("Destroying %d Pro actors!"), ProActors.Num());
+        for (AActor* DisableTarget : ProActors) {
+            DisableTarget->Destroy();
+        }
+    }
+
 }
 
 void AApocalypseGameMode::GameOver()
@@ -450,7 +465,7 @@ void AApocalypseGameMode::MoveToNextLevel()
 {
     FName NextLevelName;
 
-    if (CurrentStage <= 3)
+    if (GI->CurrentStage <= 3)
     {
         NextLevelName = FName("MapDraft_EJ");
     }
@@ -461,7 +476,7 @@ void AApocalypseGameMode::MoveToNextLevel()
 
     UE_LOG(LogTemp, Warning, TEXT("Moving to Level: %s"), *NextLevelName.ToString());
 
-    if (UApocalypseGameInstance* GI = Cast<UApocalypseGameInstance>(GetGameInstance()))
+    if (IsValid(GI))
     {
         GI->ShowLoadingScreen();
     }
@@ -474,7 +489,7 @@ void AApocalypseGameMode::MoveToNextLevel()
 void AApocalypseGameMode::ExecuteLoadingSequence(TFunction<void()> LogicAfterLoading)
 {
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
-    UApocalypseGameInstance* GI = Cast<UApocalypseGameInstance>(GetGameInstance());
+    //UApocalypseGameInstance* GI = Cast<UApocalypseGameInstance>(GetGameInstance()); 클래스 맴버 변수로 변경
 
     if (!PC || !GI) return;
 
@@ -483,7 +498,7 @@ void AApocalypseGameMode::ExecuteLoadingSequence(TFunction<void()> LogicAfterLoa
 
     //5초 대기 후 로직 실행
     FTimerHandle TimerHandle;
-    GetWorldTimerManager().SetTimer(TimerHandle, [this, GI, PC, LogicAfterLoading]()
+    GetWorldTimerManager().SetTimer(TimerHandle, [this, /*GI,*/ PC, LogicAfterLoading]()
         {
             //전달받은 핵심 로직 실행
             if (LogicAfterLoading) LogicAfterLoading();

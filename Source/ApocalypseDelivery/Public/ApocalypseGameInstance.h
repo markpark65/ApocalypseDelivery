@@ -25,6 +25,7 @@ public:
         Super::Init();
         // 3개 스테이지 슬롯 미리 생성
         DeliveryRecords.SetNum(3);
+        CurrentStage = 1;
     }
 
     UFUNCTION(BlueprintCallable)
@@ -81,6 +82,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "UI")
     void HideLoadingScreen();
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
+    int32 CurrentStage;
+    
 protected:
     UPROPERTY(BlueprintReadWrite)
     TArray<FStageRecord> DeliveryRecords; // 배달 기록 목록

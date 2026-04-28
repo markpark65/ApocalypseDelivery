@@ -186,12 +186,15 @@ protected:
     //드론 SFX
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
     USoundBase* DroneSound;
+    UPROPERTY()
+    UAudioComponent* MovementAudioComp;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
     USoundBase* CrushSound;
+    UPROPERTY()
+    UAudioComponent* CrushAudioComp;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
     float SoundMuliplier;
-    UPROPERTY()
-    UAudioComponent* AudioComp;
+    
 
     
 

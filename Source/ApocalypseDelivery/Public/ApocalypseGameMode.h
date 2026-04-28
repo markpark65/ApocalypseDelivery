@@ -31,6 +31,7 @@ struct FWaveData
 };*/
 
 class ADrone;
+class UApocalypseGameInstance;
 
 UCLASS()
 class APOCALYPSEDELIVERY_API AApocalypseGameMode : public AGameModeBase
@@ -86,9 +87,6 @@ protected:
     UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<class UUserWidget> FailureWidgetClass;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
-    int32 CurrentStage = 1;
-
     int32 NumberOfDeliveries;
 
     UPROPERTY(EditAnywhere, Category = "Sound")
@@ -126,4 +124,6 @@ private:
 
     //──미니맵 마커 데이터를 수집해 HUD에 전달하는 함수──
     void UpdateMinimapMarkers();
+
+    UApocalypseGameInstance* GI;
 };
