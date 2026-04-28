@@ -474,7 +474,7 @@ void ADrone::SetDelayedInput(float MovementDelayRatio, float RotationDelayRatio,
 	UE_LOG(LogTemp, Warning, TEXT("LerpRate Delayed: Movement-%f, Rotation %f"), MovementDelayRatio, RotationDelayRatio);
 	MovementLerpRate *= MovementDelayRatio;
 	RotationLerpRate *= RotationDelayRatio;
-	GetWorldTimerManager().SetTimer(ScaleTimerHandle, this, &ADrone::ResetDelayedInput, Duration, false);
+	GetWorldTimerManager().SetTimer(DelayTimerHandle, this, &ADrone::ResetDelayedInput, Duration, false);
 }
 
 void ADrone::ResetDelayedInput()

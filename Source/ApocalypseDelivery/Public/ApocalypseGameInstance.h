@@ -47,6 +47,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "UI")
     void ShowLoadingScreen();
 
+    // 로딩 화면 제거 함수
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void HideLoadingScreen();
+
 protected:
     UPROPERTY(BlueprintReadWrite)
     TArray<float> DeliveryRecords; // 배달 기록 목록

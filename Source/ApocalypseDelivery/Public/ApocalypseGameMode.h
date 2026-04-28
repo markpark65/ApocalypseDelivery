@@ -76,6 +76,9 @@ public:
     FORCEINLINE bool IsTimerActive() const { return bIsTimerActive; }
 
     ADeliveryPlatform* GetRandomAvailablePlatform();
+
+    void TransitionWithLoading(bool bIsVictory);
+
 protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
@@ -123,6 +126,9 @@ protected:
     // 현재 스폰된 화물 (미니맵 표시용)
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameLogic")
     class ADeliveryPackage* CurrentPackage;
+
+    // 공통 로딩 시퀀스 함수
+    void ExecuteLoadingSequence(TFunction<void()> LogicAfterLoading);
 
 private:
     void UpdateDifficulty();

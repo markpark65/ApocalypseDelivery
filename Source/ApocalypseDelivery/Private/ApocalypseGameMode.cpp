@@ -22,6 +22,20 @@ void AApocalypseGameMode::BeginPlay()
 {
     Super::BeginPlay();
 
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    UApocalypseGameInstance* GI = Cast<UApocalypseGameInstance>(GetGameInstance());
+    if (PC && PC->PlayerCameraManager)
+    {
+        //다음 레벨이 불러오자마자 화면을 즉시 검은색으로 강제 유지
+        PC->PlayerCameraManager->StartCameraFade(1.0f, 1.0f, 0.0f, FLinearColor::Black, false, true);
+    }
+
+    //레벨 시작과 동시에 로딩 위젯 5초 최상단 유지 후 밝아지는 시퀀스 실행
+    ExecuteLoadingSequence([]()
+        {
+            // 5초 로딩 완료 후 특별히 추가 실행할 콜백 로직은 없음
+        });
+
     //──미니맵 마커 초기화──
     CurrentPlatform = nullptr;
     CurrentTargetPlatform = nullptr;
@@ -35,6 +49,7 @@ void AApocalypseGameMode::BeginPlay()
         // 2D 사운드로 재생
         BGMComponent = UGameplayStatics::SpawnSound2D(this, BackgroundMusic);
     }
+
     if (HUDWidgetClass)
     {
         CurrentHUD = CreateWidget<UApocalypseHUD>(GetWorld(), HUDWidgetClass);
@@ -53,7 +68,7 @@ void AApocalypseGameMode::BeginPlay()
         // 레벨에 배치된 Spawner 찾기
     Spawner = Cast<AMeteorSpawner>(UGameplayStatics::GetActorOfClass(GetWorld(), AMeteorSpawner::StaticClass()));
     
-    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    //APlayerController* PC = GetWorld()->GetFirstPlayerController();
     if (PC)
     {
         PC->bShowMouseCursor = true;
@@ -285,7 +300,7 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     //bIsTimerActive = false;
     //기록 저장 코드
     AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
-    if (IsValid(GS)) 
+    if (IsValid(GS))
     {
         GS->SetNotPlaying();
     }
@@ -303,7 +318,7 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     {
         TargetPlatform->MarkAsUsed();
     }
-    
+
     if (CurrentWave > MaxWavesPerStage)
     {
         CurrentStage++;
@@ -314,8 +329,23 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
             // HUD에 스테이지 클리어 UI 호출
             CurrentHUD->ShowStageClearUI();
         }
-        FTimerHandle LevelTransitionTimer;
-        GetWorldTimerManager().SetTimer(LevelTransitionTimer, this, &AApocalypseGameMode::MoveToNextLevel, 3.0f, false);
+        //FTimerHandle LevelTransitionTimer;
+        //GetWorldTimerManager().SetTimer(LevelTransitionTimer, this, &AApocalypseGameMode::MoveToNextLevel, 3.0f, false);
+
+        //기존 레벨이 사라지기 직전에 마지막으로 0.5초간 서서히 검은 화면 전환
+        APlayerController* PC = GetWorld()->GetFirstPlayerController();
+        if (PC && PC->PlayerCameraManager)
+        {
+            PC->PlayerCameraManager->StartCameraFade(0.0f, 1.0f, 0.5f, FLinearColor::Black, false, true);
+        }
+
+        // 0.5초 대기(페이드 아웃 완료) 직후 바로 다음 레벨 호출
+        FTimerHandle DelayTimer;
+        GetWorldTimerManager().SetTimer(DelayTimer, [this]()
+            {
+                this->MoveToNextLevel();
+            },
+            0.5f, false);
 
         return;
     }
@@ -343,7 +373,7 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
         }
     }*/
 
-    if(CurrentHUD)
+    if (CurrentHUD)
     {
         CurrentHUD->ShowDeliverySuccessUI();
         FString StageInfo = FString::Printf(TEXT("%d - %d"), CurrentStage, CurrentWave);
@@ -427,31 +457,52 @@ void AApocalypseGameMode::EndGame(bool bIsVictory)
         GS->SetNotPlaying();
     }
     //------------
-    UGameplayStatics::SetGamePaused(GetWorld(), true);
+
+    // UGameplayStatics::SetGamePaused는 결과창이 로딩 뒤에 깔릴 때 실행하도록 람다로 이동
     if (BGMComponent)
     {
         BGMComponent->FadeOut(1.0f, 0.0f);
     }
+
+    //0.5초간 서서히 검은 화면으로 전환
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
-    if (PC)
+    if (PC && PC->PlayerCameraManager)
     {
-        PC->bShowMouseCursor = true;
-        FInputModeUIOnly InputMode;
-        PC->SetInputMode(InputMode);
+        PC->PlayerCameraManager->StartCameraFade(0.0f, 1.0f, 0.5f, FLinearColor::Black, false, true);
     }
 
-    // 승리/패배 여부에 따라 생성할 클래스 결정
-    TSubclassOf<UUserWidget> WidgetToCreate = bIsVictory ? SuccessWidgetClass : FailureWidgetClass;
-
-    if (WidgetToCreate)
-    {
-        UUserWidget* ResultWidget = CreateWidget<UUserWidget>(GetWorld(), WidgetToCreate);
-        if (ResultWidget)
+    //0.5초 뒤 로딩 시퀀스 시작
+    FTimerHandle ResultTimer;
+    GetWorldTimerManager().SetTimer(ResultTimer, [this, bIsVictory, PC]()
         {
-            ResultWidget->AddToViewport();
-        }
-    }
+            //로딩 위젯을 띄우기 직전, 로딩 위젯 바로 아래(Z-Order:0)에 결과 위젯을 먼저 생성해둠
+            TSubclassOf<UUserWidget> WidgetToCreate = bIsVictory ? SuccessWidgetClass : FailureWidgetClass;
+            if (WidgetToCreate)
+            {
+                UUserWidget* ResultWidget = CreateWidget<UUserWidget>(GetWorld(), WidgetToCreate);
+                if (ResultWidget)
+                {
+                    ResultWidget->AddToViewport(0);
+                }
+            }
+
+            //직후 강제로 로딩 위젯을 5초간 최상단에 덮어씌움
+            this->ExecuteLoadingSequence([this, PC]()
+                {
+                    //5초 로딩 유지 시간이 끝나고 화면이 밝아질 때 게임 일시정지 및 조작 설정
+                    UGameplayStatics::SetGamePaused(GetWorld(), true);
+                    if (PC)
+                    {
+                        PC->bShowMouseCursor = true;
+                        FInputModeUIOnly InputMode;
+                        PC->SetInputMode(InputMode);
+                    }
+                }
+            );
+        },
+        0.5f, false);
 }
+
 void AApocalypseGameMode::MoveToNextLevel()
 {
     FName NextLevelName;
@@ -471,12 +522,6 @@ void AApocalypseGameMode::MoveToNextLevel()
 
     UE_LOG(LogTemp, Warning, TEXT("Moving to Level: %s"), *NextLevelName.ToString());
 
-    if (UApocalypseGameInstance* GI = Cast<UApocalypseGameInstance>(GetGameInstance()))
-    {
-        GI->ShowLoadingScreen();
-    }
-
-    // 맵 이동 실행
     UGameplayStatics::OpenLevel(GetWorld(), NextLevelName);
 }
 
@@ -500,4 +545,34 @@ ADeliveryPlatform* AApocalypseGameMode::GetRandomAvailablePlatform()
         return AvailablePlatforms[FMath::RandRange(0, AvailablePlatforms.Num() - 1)];
     }
     return nullptr;
+}
+
+// 로딩 시퀀스 구현 (Fade Out -> 5초 대기 -> Logic 실행 -> Fade In)
+void AApocalypseGameMode::ExecuteLoadingSequence(TFunction<void()> LogicAfterLoading)
+{
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    UApocalypseGameInstance* GI = Cast<UApocalypseGameInstance>(GetGameInstance());
+
+    if (!PC || !GI) return;
+
+    //로딩 위젯을 5초간 최상단에 덮어씌움
+    GI->ShowLoadingScreen();
+
+    //5초 대기 후 로직 실행
+    FTimerHandle TimerHandle;
+    GetWorldTimerManager().SetTimer(TimerHandle, [this, GI, PC, LogicAfterLoading]()
+        {
+            //전달받은 핵심 로직 실행
+            if (LogicAfterLoading) LogicAfterLoading();
+
+            //5초 끝나면 로딩 화면 사라짐
+            GI->HideLoadingScreen();
+
+            //5초 끝나면 동시에 3초간 서서히 화면 밝기 복구
+            if (PC->PlayerCameraManager)
+            {
+                PC->PlayerCameraManager->StartCameraFade(1.0f, 0.0f, 3.0f, FLinearColor::Black, false, false);
+            }
+        },
+        5.0f, false);
 }
