@@ -46,9 +46,6 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
     int32 DeliveredCount = 0;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
-    int32 TargetDeliveries = 3;
-
     // 배달 성공 시 호출
     UFUNCTION(BlueprintCallable, Category = "GameLogic")
     void OnPackageDelivered(class ADeliveryPlatform* TargetPlatform);
@@ -61,7 +58,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "GameLogic")
     void StartQuest();
 
-    UFUNCTION(BlueprintCallable, Category = "GameLogic")
+    UFUNCTION(BlueprintCallable, Exec, Category = "GameLogic")
     void MoveToNextLevel();
 
     UPROPERTY(EditAnywhere, Category = "UI")
@@ -75,7 +72,10 @@ public:
 
     FORCEINLINE bool IsTimerActive() const { return bIsTimerActive; }
 
+    UPROPERTY()
+    class ADeliveryPlatform* CurrentTargetPlatform;
 
+    int32 NumberOfDeliveries;
 protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
@@ -86,8 +86,6 @@ protected:
     // 실패 시 띄울 위젯 클래스
     UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<class UUserWidget> FailureWidgetClass;
-
-    int32 NumberOfDeliveries;
 
     UPROPERTY(EditAnywhere, Category = "Sound")
     class USoundBase* BackgroundMusic;
@@ -118,9 +116,6 @@ private:
     void UpdateDifficulty();
     UPROPERTY()
     class ADrone* PlayerDrone;
-
-    UPROPERTY()
-    class ADeliveryPlatform* CurrentTargetPlatform;
 
     //──미니맵 마커 데이터를 수집해 HUD에 전달하는 함수──
     void UpdateMinimapMarkers();

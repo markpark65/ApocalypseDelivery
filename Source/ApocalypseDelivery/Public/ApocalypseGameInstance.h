@@ -4,6 +4,8 @@
 
 #include "Blueprint/UserWidget.h"
 #include "CoreMinimal.h"
+#include "ApocalypseGameMode.h"
+#include "ApocalypseHUD.h"
 #include "Engine/GameInstance.h"
 #include "ApocalypseGameInstance.generated.h"
 
@@ -84,7 +86,15 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
     int32 CurrentStage;
-    
+
+    //치트용
+    UFUNCTION(Exec)
+    void IncreaseStageNumber() {
+        CurrentStage++;
+        UE_LOG(LogTemp, Warning, TEXT("CurrentStage number has been changed to %d"), CurrentStage);
+        AApocalypseGameMode* GM = GetWorld()->GetAuthGameMode<AApocalypseGameMode>();
+        GM->MoveToNextLevel();
+    }
 protected:
     UPROPERTY(BlueprintReadWrite)
     TArray<FStageRecord> DeliveryRecords; // 배달 기록 목록
