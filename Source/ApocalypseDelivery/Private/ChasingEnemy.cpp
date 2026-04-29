@@ -109,10 +109,13 @@ void AChasingEnemy::ReturnBase()
 
 void AChasingEnemy::CheckTargetCondition()
 {
+	if (!IsValid(TargetPlayer)) {
+		return;
+	}
 	FHitResult Hit;
 	FCollisionQueryParams TraceParams;
 	TraceParams.AddIgnoredActor(this);
-	//DrawDebugLine(GetWorld(), GetActorLocation(), TargetPlayer->GetActorLocation(), FColor::Red, false, DetectionInterval);
+	DrawDebugLine(GetWorld(), GetActorLocation(), TargetPlayer->GetActorLocation(), FColor::Red, false, DetectionInterval);
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, GetActorLocation(), TargetPlayer->GetActorLocation(),ECC_Pawn, TraceParams);
 	if (bHit && Hit.GetActor() == TargetPlayer) {
 		IsChasing = true;
@@ -158,12 +161,14 @@ void AChasingEnemy::OnPlayerCollision(UPrimitiveComponent* OverlappedComponent, 
 {
 	ADrone* PlayerDrone = Cast<ADrone>(OtherActor);
 	if (IsValid(PlayerDrone) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+		UE_LOG(LogTemp, Warning, TEXT("Colliding!"));
 		ApplyEffect(PlayerDrone);
 	}
 }
 
 void AChasingEnemy::OnRecogRangeEntered(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+		UE_LOG(LogTemp, Warning, TEXT("Entered Search Area!"));
 		TargetPlayer = OtherActor;
 		GetWorld()->GetTimerManager().SetTimer(DetectionTimer, this, &AChasingEnemy::CheckTargetCondition, DetectionInterval, true);
 	}
@@ -171,6 +176,7 @@ void AChasingEnemy::OnRecogRangeEntered(UPrimitiveComponent* OverlappedComponent
 
 void AChasingEnemy::OnRecogRangeExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
 	if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+		UE_LOG(LogTemp, Warning, TEXT("Exit!"));
 		TargetPlayer = nullptr;
 		if (GetWorld()->GetTimerManager().IsTimerActive(DetectionTimer)) {
 			GetWorld()->GetTimerManager().ClearTimer(DetectionTimer);
