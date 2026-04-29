@@ -5,7 +5,7 @@
 #include "Drone.h"
 
 #include "Components/CapsuleComponent.h"
-#include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Kismet/GameplayStatics.h"
@@ -33,7 +33,7 @@ void AWindGate::BeginPlay()
 
 void AWindGate::BeginAccelerate(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (OtherActor->IsA(ADrone::StaticClass()) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+    if (OtherActor->IsA(ADrone::StaticClass()) && OtherComp->IsA(USphereComponent::StaticClass())) {
 		Target = Cast<ADrone>(OtherActor);
         UE_LOG(LogTemp, Warning, TEXT("Accelerating! - %s"), *(Target->GetName()));
 		UAudioComponent* AudioComp;
@@ -47,7 +47,7 @@ void AWindGate::BeginAccelerate(UPrimitiveComponent* OverlappedComponent, AActor
 
 void AWindGate::EndAccelerate(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-    if (OtherActor->IsA(ADrone::StaticClass()) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+    if (OtherActor->IsA(ADrone::StaticClass()) && OtherComp->IsA(USphereComponent::StaticClass())) {
 		Target = nullptr;
         UE_LOG(LogTemp, Warning, TEXT("Stop Accerler!- %s"), *(OtherActor->GetName()));
     }

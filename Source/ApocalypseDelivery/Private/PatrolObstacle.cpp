@@ -55,7 +55,7 @@ void APatrolObstacle::BeginPlay()
 
 void APatrolObstacle::StartWarning(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+    if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(USphereComponent::StaticClass())) {
         UE_LOG(LogTemp, Warning, TEXT("entered"));
         if (!IsValid(WarningAudioComp) || !(WarningAudioComp->IsPlaying())) {
             UE_LOG(LogTemp, Warning, TEXT("Playing sound"));
@@ -67,7 +67,7 @@ void APatrolObstacle::StartWarning(UPrimitiveComponent* OverlappedComponent, AAc
 void APatrolObstacle::EndWarning(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
     
-    if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass()))
+    if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(USphereComponent::StaticClass()))
     {
         UE_LOG(LogTemp, Warning, TEXT("exited"));
         UE_LOG(LogTemp, Warning, TEXT("WarningAudioComp valid: %d"), IsValid(WarningAudioComp));

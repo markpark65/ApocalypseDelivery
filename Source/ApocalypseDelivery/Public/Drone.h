@@ -80,7 +80,6 @@ public:
     FORCEINLINE FVector GetCurrentVelocity() const { return GetVelocity(); }
 
     void ResetSpeed();
-    void HandleGameOver();
 
     //UI 위젯에서 상태변화 블루프린트 노드로 호출할 함수
     UFUNCTION(BlueprintPure, Category = "Status|UI")
@@ -119,13 +118,9 @@ protected:
     virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-    //택배 상자
-    UPROPERTY(EditAnywhere, Category = "Spawning")
-    TSubclassOf<AActor> PackageClass;
-
     // 컴포넌트
     UPROPERTY(VisibleAnywhere, Category = "Components")
-    class UBoxComponent* BoxComp;
+    class USphereComponent* SphereComp;
 
     UPROPERTY(VisibleAnywhere, Category = "Components")
     class USkeletalMeshComponent* MeshComp;
@@ -166,10 +161,10 @@ protected:
     void EndRolling(const FInputActionValue& Value);
 
     // 배달
-    UPROPERTY(VisibleAnywhere, Category = "Interaction")
-    class USphereComponent* InteractionSphere; // 상자 감지 영역
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
     float HoldingDistance;
+    UPROPERTY(EditAnywhere, Category = "Spawning")
+    TSubclassOf<AActor> PackageClass;
 
     //충돌
     UFUNCTION()
