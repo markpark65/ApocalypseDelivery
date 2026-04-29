@@ -247,10 +247,19 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     DeliveredCount++;
     //CurrentWave++;
 
+
+    // 다음 StartQuest 전까지 미니맵 마커를 비워둔다.
+    //CurrentPackage = nullptr;
+    //CurrentPlatform = nullptr;
+    //CurrentTargetPlatform = nullptr;
+    // ────────────────
+    
+    /*MarkAsUsed() ADeliveryPlatform에서 직접 호출하도록 수정 완료
     if (TargetPlatform)
     {
         TargetPlatform->MarkAsUsed();
-    }
+    }*/
+
     
     if (DeliveredCount >= NumberOfDeliveries)
     {

@@ -14,7 +14,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
+	//virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	class UStaticMeshComponent* MeshComp;

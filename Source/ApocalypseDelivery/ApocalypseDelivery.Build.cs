@@ -8,7 +8,7 @@ public class ApocalypseDelivery : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "Slate", "SlateCore", "Renderer", "RenderCore", "RHI" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "Slate", "SlateCore", "Renderer", "RenderCore", "RHI", "Niagara" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

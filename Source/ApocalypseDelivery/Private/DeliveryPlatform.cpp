@@ -6,11 +6,13 @@
 
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "Kismet/GameplayStatics.h"
 
 ADeliveryPlatform::ADeliveryPlatform()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	//PrimaryActorTick.bCanEverTick = true;
 
     DeliveryZone = CreateDefaultSubobject<UBoxComponent>(TEXT("DeliveryZone"));
     SetRootComponent(DeliveryZone);
@@ -19,46 +21,26 @@ ADeliveryPlatform::ADeliveryPlatform()
     PlatformMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlatformMesh"));
     PlatformMesh->SetupAttachment(RootComponent);
 
-    /*
-    TargetIndicatorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TargetIndicatorMesh"));
-    TargetIndicatorMesh->SetupAttachment(RootComponent);
-    TargetIndicatorMesh->SetVisibility(false);*/
+    DirectionComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("DirectionComp"));
+    DirectionComp->SetupAttachment(RootComponent);
+    DirectionComp->SetAutoActivate(false); // 자동 재생 여부
 
-    InitialRelativeZ = 150.0f;
+    SuccessComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("SuccessComp"));
+    SuccessComp->SetupAttachment(RootComponent);
+    SuccessComp->SetAutoActivate(false); // 자동 재생 여부
 }
 
 void ADeliveryPlatform::BeginPlay()
 {
 	Super::BeginPlay();
-
-    /*
-    if (TargetIndicatorMesh)
-    {
-        InitialRelativeZ = TargetIndicatorMesh->GetRelativeLocation().Z;
-    }*/
-	
+    DirectionComp->Activate(true);
 }
+/*
 void ADeliveryPlatform::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    /*
-    if (TargetIndicatorMesh && TargetIndicatorMesh->IsVisible())
-    {
-        // 회전 로직
-        FRotator NewRotation = TargetIndicatorMesh->GetRelativeRotation();
-        NewRotation.Yaw += RotationSpeed * DeltaTime;
-        TargetIndicatorMesh->SetRelativeRotation(NewRotation);
-
-        // 위아래 이동 로직
-        float RunningTime = GetWorld()->GetTimeSeconds();
-        float NewZ = InitialRelativeZ + (FMath::Sin(RunningTime * BobbingSpeed) * BobbingAmount);
-
-        FVector NewLocation = TargetIndicatorMesh->GetRelativeLocation();
-        NewLocation.Z = NewZ;
-        TargetIndicatorMesh->SetRelativeLocation(NewLocation);
-    }*/
-}
+}*/
 //택배 배송 완료 로직
 void ADeliveryPlatform::NotifyActorBeginOverlap(AActor* OtherActor)
 {
@@ -87,6 +69,7 @@ void ADeliveryPlatform::NotifyActorBeginOverlap(AActor* OtherActor)
                 }
             }
         }
+        MarkAsUsed();
 
         // 상자 배달 효과음
         if (SuccessSound)
@@ -112,6 +95,8 @@ void ADeliveryPlatform::MarkAsUsed()
         if (DynMaterial)
         {
             DynMaterial->SetVectorParameterValue(TEXT("Color"), FLinearColor::Red);
+            DirectionComp->DeactivateImmediate();
+            SuccessComp->Activate(true);
         }
     }
 }
