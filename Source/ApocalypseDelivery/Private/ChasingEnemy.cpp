@@ -140,6 +140,9 @@ void AChasingEnemy::PlayOverlapEffects() {
 
 void AChasingEnemy::ApplyEffect_Implementation(class ADrone* Drone) {
 	WarningAudioComp->Stop();
+	if (IsValid(WarningAudioComp)) {
+		WarningAudioComp->Stop();
+	}
 	if (IsRepulsive) {
 		Drone->ApplyImpulseVelocity(GetVelocity());
 		AApocalypseDroneController* PC = Cast<AApocalypseDroneController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
