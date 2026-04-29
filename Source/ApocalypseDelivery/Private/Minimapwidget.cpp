@@ -11,12 +11,10 @@ void UMinimapWidget::NativeConstruct()
 
     // 마커 기본 색상 설정 (BP에서 텍스처를 지정해도 되고, 이 색상만 써도 됩니다)
     if (DroneMarker)   DroneMarker->SetColorAndOpacity(FLinearColor(0.1f, 1.0f, 0.2f));   // 초록
-    //if (TargetMarker)  TargetMarker->SetColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.0f));  // 노랑
-    //if (PackageMarker) PackageMarker->SetColorAndOpacity(FLinearColor(0.2f, 0.75f, 1.0f));// 하늘색
+    if (TargetMarker)  TargetMarker->SetColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.0f));  // 노랑
 
-    // 목적지·화물은 정보가 들어오기 전까지 숨김
-    //if (TargetMarker)  TargetMarker->SetVisibility(ESlateVisibility::Hidden);
-    //if (PackageMarker) PackageMarker->SetVisibility(ESlateVisibility::Hidden);
+    // 목적지 정보가 들어오기 전까지 숨김
+    if (TargetMarker)  TargetMarker->SetVisibility(ESlateVisibility::Hidden);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -47,7 +45,7 @@ void UMinimapWidget::ApplyBackgroundResource(UObject* Resource)
 // 마커 갱신
 // ────────────────────────────────────────────────────────────────────────────
 
-void UMinimapWidget::UpdateMarkers(FVector DroneWorldPos/*, bool bHasTarget, FVector TargetWorldPos, bool bHasPackage, FVector PackageWorldPos*/)
+void UMinimapWidget::UpdateMarkers(FVector DroneWorldPos, const TArray<FVector>& PlatformPositions)
 {
     APawn* PlayerPawn = GetOwningPlayerPawn();
     if (!PlayerPawn || !MinimapBackground || !MarkerCanvas) return;
@@ -75,9 +73,56 @@ void UMinimapWidget::UpdateMarkers(FVector DroneWorldPos/*, bool bHasTarget, FVe
     float HalfSize = MinimapSize * 0.5f;
     PlaceMarker(DroneMarker, FVector2D(HalfSize, HalfSize), true);
 
-    // 2. 목적지 및 화물 마커 (드론 기준 상대 위치)
-    //PlaceMarker(TargetMarker, WorldToMinimapPos(TargetWorldPos, DroneWorldPos), bHasTarget);
-    //PlaceMarker(PackageMarker, WorldToMinimapPos(PackageWorldPos, DroneWorldPos), bHasPackage);
+    // 2. 목적지 마커 (드론 기준 상대 위치)
+    //드론 마커 위치 업데이트
+    PlaceMarker(DroneMarker, WorldToMinimapPos(DroneWorldPos, DroneWorldPos), true);
+    
+    //전달된 플랫폼 개수보다 마커가 부족하다면 기존 마커를 복사해서 동적 생성
+    while (ActivePlatformMarkers.Num() < PlatformPositions.Num())
+    {
+        UImage* NewMarker = NewObject<UImage>(MarkerCanvas);
+        if (TargetMarker)
+        {
+            //원본 TargetMarker의 브러시와 색상 설정 복사
+            NewMarker->SetBrush(TargetMarker->GetBrush());
+            NewMarker->SetColorAndOpacity(TargetMarker->ColorAndOpacity);
+        }
+
+        //캔버스 패널에 새로 만든 마커 추가
+        UCanvasPanelSlot* NewSlot = Cast<UCanvasPanelSlot>(MarkerCanvas->AddChildToCanvas(NewMarker));
+        UCanvasPanelSlot* TargetSlot = Cast<UCanvasPanelSlot>(TargetMarker->Slot);
+
+        //슬롯 크기 및 정렬 정보 복사
+        if (NewSlot && TargetSlot)
+        {
+            NewSlot->SetSize(TargetSlot->GetSize());
+            NewSlot->SetAlignment(TargetSlot->GetAlignment());
+            NewSlot->SetAnchors(TargetSlot->GetAnchors());
+        }
+
+        ActivePlatformMarkers.Add(NewMarker);
+    }
+
+    //복제 틀로 사용된 원본 TargetMarker는 화면에서 숨김 처리
+    if (TargetMarker)
+    {
+        TargetMarker->SetVisibility(ESlateVisibility::Hidden);
+    }
+
+    //배열을 돌며 위치 적용 및 가시성 갱신
+    for (int32 i = 0; i < ActivePlatformMarkers.Num(); ++i)
+    {
+        if (i < PlatformPositions.Num())
+        {
+            //유효한 플랫폼 개수 안쪽이면 위치 갱신 후 표시
+            PlaceMarker(ActivePlatformMarkers[i], WorldToMinimapPos(PlatformPositions[i], DroneWorldPos), true);
+        }
+        else
+        {
+            //남는 마커는 화면에서 숨김
+            PlaceMarker(ActivePlatformMarkers[i], FVector2D::ZeroVector, false);
+        }
+    }
 }
 
 // ────────────────────────────────────────────────────────────────────────────

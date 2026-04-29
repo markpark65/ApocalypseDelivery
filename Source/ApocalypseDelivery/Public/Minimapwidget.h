@@ -68,9 +68,8 @@ public:
      * @param PackageWorldPos 화물 월드 위치
      */
     void UpdateMarkers(
-        FVector DroneWorldPos/*,
-        bool    bHasTarget, FVector TargetWorldPos,
-        bool    bHasPackage, FVector PackageWorldPos*/
+        FVector DroneWorldPos,
+        const TArray<FVector>& PlatformPositions
     );
 
 protected:
@@ -87,11 +86,12 @@ private:
     UPROPERTY(meta = (BindWidget))
     UImage* DroneMarker = nullptr;
 
-    //UPROPERTY(meta = (BindWidget))
-    //UImage* TargetMarker = nullptr;
+    UPROPERTY(meta = (BindWidget))
+    UImage* TargetMarker = nullptr;
 
-    //UPROPERTY(meta = (BindWidget))
-    //UImage* PackageMarker = nullptr;
+    // 동적으로 생성한 추가 플랫폼 마커들을 관리할 배열
+    UPROPERTY()
+    TArray<UImage*> ActivePlatformMarkers;
 
     // ── 내부 유틸 ────────────────────────────────────────────────────────────
 

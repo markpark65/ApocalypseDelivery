@@ -15,6 +15,7 @@ void AApocalypseGameStateBase::BeginPlay()
 	TimeElapsed = 0.0f;
 	LastBroadcastedTime = 0.0f;
 	IsPlaying = false;
+	BroadcastInterval = 0.01f;
 }
 
 void AApocalypseGameStateBase::Tick(float DeltaTime)
@@ -25,7 +26,7 @@ void AApocalypseGameStateBase::Tick(float DeltaTime)
 		//UE_LOG(LogTemp, Warning, TEXT("TimeElapsed: %f"), TimeElapsed);
 
 		if (TimeElapsed - LastBroadcastedTime >= BroadcastInterval) {
-			GetWorld()->GetAuthGameMode<AApocalypseGameMode>()->CurrentHUD->UpdateTimer((int32)TimeElapsed/60, (int32)TimeElapsed % 60);
+			GetWorld()->GetAuthGameMode<AApocalypseGameMode>()->CurrentHUD->UpdateTimer((int32)TimeElapsed/60, (int32)TimeElapsed % 60, (int32)FMath::FloorToInt(FMath::Fmod(TimeElapsed, 1.0f) * 100.0f));
 			LastBroadcastedTime = TimeElapsed;
 		}
 	}

@@ -50,15 +50,18 @@ void AApocalypseGameMode::BeginPlay()
         );
     }
 
-    //──미니맵 마커 초기화──
-    //CurrentPlatform = nullptr;
-    //CurrentTargetPlatform = nullptr;
-    //CurrentPackage = nullptr;
-
     //상자 배달지점 갯수 확인
     TArray<AActor*> FoundPlatforms;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADeliveryPlatform::StaticClass(), FoundPlatforms);
     NumberOfDeliveries = FoundPlatforms.Num();
+
+    for (AActor* Actor : FoundPlatforms)
+    {
+        if (ADeliveryPlatform* Platform = Cast<ADeliveryPlatform>(Actor))
+        {
+            AllPlatforms.Add(Platform);
+        }
+    }
 
     //CurrentTimeLeft = TimeLimit;
     bIsTimerActive = false;
@@ -80,7 +83,7 @@ void AApocalypseGameMode::BeginPlay()
             //int32 Mins = FMath::FloorToInt(CurrentTimeLeft / 60.0f);
             //int32 Secs = FMath::FloorToInt(CurrentTimeLeft) % 60;
             //CurrentHUD->UpdateTimer(Mins, Secs);
-            CurrentHUD->UpdateTimer(0, 0);
+            CurrentHUD->UpdateTimer(0, 0, 0);
         }
     }
     PlayerDrone = Cast<ADrone>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
@@ -103,50 +106,6 @@ void AApocalypseGameMode::BeginPlay()
 
 void AApocalypseGameMode::StartQuest()
 {
-    //스폰된 패키지를 즉시 미니맵 변수에 할당
-    /*
-    TArray<AActor*> FoundPackages;
-    UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Package"), FoundPackages);
-    if (FoundPackages.Num() > 0)
-    {
-        CurrentPackage = Cast<ADeliveryPackage>(FoundPackages[0]);
-    }
-    
-    //CurrentTargetPlatform = GetRandomAvailablePlatform();
-    CurrentPlatform = CurrentTargetPlatform; // 미니맵용 변수 재설정
-    */
-    /*
-    TArray<AActor*> AllPlatforms;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADeliveryPlatform::StaticClass(), AllPlatforms);
-    for (AActor* Actor : AllPlatforms)
-    {
-        if (ADeliveryPlatform* Platform = Cast<ADeliveryPlatform>(Actor))
-        {
-            bool bIsCurrentTarget = (Platform == CurrentTargetPlatform);
-            Platform->SetActorHiddenInGame(!bIsCurrentTarget);
-            Platform->SetIsTarget(bIsCurrentTarget);
-            if (Platform->bIsUsed)
-            {
-                Platform->SetActorHiddenInGame(true);
-            }
-        }
-    }
-
-    if (CurrentTargetPlatform)
-    {
-        CurrentTargetPlatform->SetIsTarget(true);
-        UE_LOG(LogTemp, Warning, TEXT("New Target Platform Assigned!"));
-    }*/
-
-    // ── 미니맵 마커 관련 기능 ──
-    /*
-    CurrentPlatform = CurrentTargetPlatform;
-
-    if (CurrentTargetPlatform)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Quest Started! Target Platform: %s"), *CurrentTargetPlatform->GetName());
-    }
-    */
     bIsTimerActive = true;
     AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
     if (IsValid(GS)) {
@@ -232,40 +191,22 @@ void AApocalypseGameMode::Tick(float DeltaTime)
     {
         // 드론 위치
         FVector DronePos = PlayerDrone->GetActorLocation();
-        /*
-        // 목적지 정보 (StartQuest에서 이미 정해진 CurrentPlatform만 사용)
-        bool bHasTarget = IsValid(CurrentPlatform);
-        FVector TargetPos = bHasTarget ? CurrentPlatform->GetActorLocation() : FVector::ZeroVector;
-
-        // 화물 정보 갱신
-        bool bHasPackage = false;
-        FVector PackagePos = FVector::ZeroVector;
-        
-        if (!CurrentPackage)
+        // 목적지 정보
+        TArray<FVector> PlatformPositions;
+        for (ADeliveryPlatform* Platform : AllPlatforms)
         {
-            TArray<AActor*> FoundPackages;
-            UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Package"), FoundPackages);
-            if (FoundPackages.Num() > 0)
+            if (Platform && !Platform->bIsUsed)
             {
-                CurrentPackage = Cast<ADeliveryPackage>(FoundPackages[0]);
+                PlatformPositions.Add(Platform->GetActorLocation());
             }
         }
-
-        //상자 픽업 로직 삭제로 임시 주석처리
-        /*
-        if (CurrentPackage && PlayerDrone->GetAttachedPackage() == nullptr)
-        {
-            bHasPackage = true;
-            PackagePos = CurrentPackage->GetActorLocation();
-        }*/
-
         // HUD 업데이트 호출
-        CurrentHUD->UpdateMinimap(DronePos/*, bHasTarget, TargetPos, bHasPackage, PackagePos*/);
+        CurrentHUD->UpdateMinimap(DronePos, PlatformPositions/*, bHasPackage, PackagePos*/);
     }
     else if (!bIsTimerActive && CurrentHUD)
     {
         // 퀘스트 시작 전에는 마커 숨김.
-        CurrentHUD->UpdateMinimap(FVector::ZeroVector/*, false, FVector::ZeroVector, false, FVector::ZeroVector*/);
+        CurrentHUD->UpdateMinimap(FVector::ZeroVector, TArray<FVector>()/*, false, FVector::ZeroVector*/);
     }
 }
 
@@ -275,35 +216,21 @@ void AApocalypseGameMode::UpdateMinimapMarkers()
     if (!CurrentHUD || !PlayerDrone) return;
 
     FVector DronePos = PlayerDrone->GetActorLocation();
-    /*
+
     //목표 플랫폼
-    bool    bHasTarget = (CurrentTargetPlatform != nullptr);
-    FVector TargetPos = bHasTarget ? CurrentTargetPlatform->GetActorLocation() : FVector::ZeroVector;
-
-    //드론에 부착되지 않은 경우에만 마커 표시
-    bool    bHasPackage = false;
-    FVector PackagePos = FVector::ZeroVector;
-
-    //패키지 픽업 로직 삭제로 임시 주석처리
-    /*
-    AActor* Attached = PlayerDrone->GetAttachedPackage();
-    if (!Attached)
+    TArray<FVector> PlatformPositions;
+    for (ADeliveryPlatform* Platform : AllPlatforms)
     {
-        //씬에 있는 Package 탐색
-        TArray<AActor*> FoundPackages;
-        UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Package"), FoundPackages);
-
-        if (FoundPackages.Num() > 0)
+        if (Platform && !Platform->bIsUsed)
         {
-            bHasPackage = true;
-            PackagePos = FoundPackages[0]->GetActorLocation(); //첫 번째 화물
+            PlatformPositions.Add(Platform->GetActorLocation());
         }
-    }*/
+    }
 
     //HUD → MinimapWidget 전달
     CurrentHUD->UpdateMinimap(
-        DronePos/*,
-        bHasTarget, TargetPos,
+        DronePos,
+        PlatformPositions/*,
         bHasPackage, PackagePos*/
     );
 }
@@ -319,12 +246,6 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     //------------
     DeliveredCount++;
     //CurrentWave++;
-
-    // 다음 StartQuest 전까지 미니맵 마커를 비워둔다.
-    //CurrentPackage = nullptr;
-    //CurrentPlatform = nullptr;
-    //CurrentTargetPlatform = nullptr;
-    // ────────────────
 
     if (TargetPlatform)
     {
