@@ -18,7 +18,6 @@
 #include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
-#include "Components/BoxComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
@@ -31,9 +30,9 @@ ADrone::ADrone()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	BoxComp = CreateDefaultSubobject<UBoxComponent>(TEXT("CapsuleComp"));
-	SetRootComponent(BoxComp);
-	BoxComp->SetSimulatePhysics(false);
+	SphereComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
+	RootComponent = SphereComp;
+	SphereComp->SetSimulatePhysics(false);
 
 	MeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetupAttachment(RootComponent);
@@ -47,17 +46,13 @@ ADrone::ADrone()
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
 
-	InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
-	InteractionSphere->SetupAttachment(RootComponent);
-	InteractionSphere->SetSphereRadius(150.f);
-
 	ShieldMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMesh"));
 	ShieldMesh->SetupAttachment(RootComponent);
 	ShieldMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ShieldMesh->SetVisibility(false);
 
 	MovementComp = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComp"));
-	MovementComp->SetUpdatedComponent(BoxComp);
+	MovementComp->SetUpdatedComponent(SphereComp);
 
 	PhysicsConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("PhysicalConstComp"));
 	PhysicsConstraint->SetupAttachment(RootComponent);
@@ -107,7 +102,7 @@ void ADrone::BeginPlay()
 	{
 		ShieldMesh->SetVisibility(false);
 	}
-	BoxComp->OnComponentHit.AddDynamic(this, &ADrone::OnDroneHit);
+	SphereComp->OnComponentHit.AddDynamic(this, &ADrone::OnDroneHit);
 
 	// ── 미니맵 RenderTarget 런타임 생성 ──
 	MinimapRenderTarget = NewObject<UTextureRenderTarget2D>(this, TEXT("MinimapRenderTarget"));
@@ -364,13 +359,13 @@ void ADrone::SetGravitated(float Duration)
 {
 	//위젯에 표시할 최댓값 저장
 	GravityMaxDuration = Duration;
-	BoxComp->SetSimulatePhysics(true);
+	SphereComp->SetSimulatePhysics(true);
 	GetWorldTimerManager().SetTimer(GravityTimerHandle, this, &ADrone::ResetGravited, Duration, false);
 	UE_LOG(LogTemp, Warning, TEXT("Gravity on!"));
 }
 void ADrone::ResetGravited()
 {
-	BoxComp->SetSimulatePhysics(false);
+	SphereComp->SetSimulatePhysics(false);
 	UE_LOG(LogTemp, Warning, TEXT("Gravity off!"));
 }
 
@@ -453,35 +448,6 @@ void ADrone::OnDroneHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 		CrushAudioComp = UGameplayStatics::SpawnSound2D(GetWorld(), CrushSound);
 	}
 }
-/*
-void ADrone::NotifyActorBeginOverlap(AActor* OtherActor)
-{
-	Super::NotifyActorBeginOverlap(OtherActor);
-
-	if (!OtherActor) return;
-
-	IADInteractable* Interactable = Cast<IADInteractable>(OtherActor);
-	if (Interactable)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Item Overlapped: %s"), *OtherActor->GetName());
-		Interactable->ApplyEffect(this);
-	}
-}
-void ADrone::NotifyActorEndOverlap(AActor* OtherActor)
-{
-	Super::NotifyActorEndOverlap(OtherActor);
-
-	if (OtherActor && OtherActor->ActorHasTag("Package"))
-	{
-		if (IsValid(GM))
-		{
-			if (GM->CurrentHUD)
-			{
-				GM->CurrentHUD->SetInteractionPrompt(false, TEXT(""));
-			}
-		}
-	}
-}*/
 
 //상태변화 Progress Bar 구현 로직
 TArray<FEffectUIStatus> ADrone::GetActiveEffectsStatus() const

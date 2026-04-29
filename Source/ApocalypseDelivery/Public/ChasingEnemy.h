@@ -58,8 +58,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Crow)
 	bool bUsingSearch;
 
-	FVector BasePosition;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = Crow)
 	AActor* TargetPlayer;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crow)
 	bool IsChasing;
 	FTimerHandle DetectionTimer;
 
@@ -71,9 +72,6 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = Crow)
 	void CheckTargetCondition();
-
-	UFUNCTION(BlueprintCallable, Category = Crow)
-	void SetBasePosition();
 
 	//Collision Effects
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")

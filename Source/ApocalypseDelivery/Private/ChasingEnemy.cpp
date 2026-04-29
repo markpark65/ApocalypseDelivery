@@ -7,7 +7,6 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
-#include "Components/BoxComponent.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -43,7 +42,6 @@ AChasingEnemy::AChasingEnemy()
 void AChasingEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-	BasePosition = GetActorLocation();
 	IsChasing = false;
 	TargetPlayer = nullptr;
 
@@ -98,17 +96,21 @@ void AChasingEnemy::Charge() {
 void AChasingEnemy::ReturnBase()
 {
 	if (!MovementComp) return;
-	if (FVector::Dist(GetActorLocation(), BasePosition) < ArrivalThreshold) {
+	if (FVector::Dist(GetActorLocation(), RecognitionSphere->GetComponentLocation()) < ArrivalThreshold) {
 		MovementComp->StopMovementImmediately();
 		return;
 	}
-	FVector Direction = (BasePosition - GetActorLocation());
+	FVector Direction = (RecognitionSphere->GetComponentLocation() - GetActorLocation());
 
 	MovementComp->AddInputVector(Direction);
 }
 
 void AChasingEnemy::CheckTargetCondition()
 {
+	UE_LOG(LogTemp, Warning, TEXT("Checking Target!"));
+	if (!IsValid(TargetPlayer)) {
+		return;
+	}
 	FHitResult Hit;
 	FCollisionQueryParams TraceParams;
 	TraceParams.AddIgnoredActor(this);
@@ -118,15 +120,8 @@ void AChasingEnemy::CheckTargetCondition()
 		IsChasing = true;
 		return;
 	}
-	
-	//Failed to Find
-	TargetPlayer = nullptr;
-	IsChasing = false;
-}
 
-void AChasingEnemy::SetBasePosition()
-{
-	BasePosition = GetActorLocation();
+	IsChasing = false;
 }
 
 void AChasingEnemy::PlayOverlapEffects() {
@@ -157,20 +152,23 @@ void AChasingEnemy::ApplyEffect_Implementation(class ADrone* Drone) {
 void AChasingEnemy::OnPlayerCollision(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	ADrone* PlayerDrone = Cast<ADrone>(OtherActor);
-	if (IsValid(PlayerDrone) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+	if (IsValid(PlayerDrone) && IsValid(OtherComp) && OtherComp->IsA(USphereComponent::StaticClass())) {
+		UE_LOG(LogTemp, Warning, TEXT("Colliding!"));
 		ApplyEffect(PlayerDrone);
 	}
 }
 
 void AChasingEnemy::OnRecogRangeEntered(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-	if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+	if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(USphereComponent::StaticClass())) {
+		UE_LOG(LogTemp, Warning, TEXT("Entered Search Area!"));
 		TargetPlayer = OtherActor;
 		GetWorld()->GetTimerManager().SetTimer(DetectionTimer, this, &AChasingEnemy::CheckTargetCondition, DetectionInterval, true);
 	}
 }
 
 void AChasingEnemy::OnRecogRangeExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-	if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+	if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(USphereComponent::StaticClass())) {
+		UE_LOG(LogTemp, Warning, TEXT("Exit!"));
 		TargetPlayer = nullptr;
 		if (GetWorld()->GetTimerManager().IsTimerActive(DetectionTimer)) {
 			GetWorld()->GetTimerManager().ClearTimer(DetectionTimer);

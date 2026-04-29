@@ -3,6 +3,7 @@
 
 #include "OpeningObstacle.h"
 #include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "Drone.h"
 
 // Sets default values
@@ -49,11 +50,11 @@ void AOpeningObstacle::FlipOpenDirection()
 }
 
 void AOpeningObstacle::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-	if(OtherActor->IsA(ADrone::StaticClass()) && OtherComp->IsA(UBoxComponent::StaticClass())) FlipOpenDirection();
+	if(OtherActor->IsA(ADrone::StaticClass()) && OtherComp->IsA(USphereComponent::StaticClass())) FlipOpenDirection();
 }
 
 void AOpeningObstacle::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-	if (OtherActor->IsA(ADrone::StaticClass()) && OtherComp->IsA(UBoxComponent::StaticClass())) FlipOpenDirection();
+	if (OtherActor->IsA(ADrone::StaticClass()) && OtherComp->IsA(USphereComponent::StaticClass())) FlipOpenDirection();
 }
 
 // Called every frame
