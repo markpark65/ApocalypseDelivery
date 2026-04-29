@@ -42,9 +42,8 @@ public:
 
     // ApocalypseGameMode::Tick에서 마커 위치 갱신.
     void UpdateMinimap(
-        FVector DronePos//,
-        //bool bHasTarget, FVector TargetPos,
-        //bool bHasPackage, FVector PackagePos
+        FVector DronePos,
+        const TArray<FVector>& PlatformPositions
     );
 
     // 초기화 시 버튼 클릭 이벤트 연결
@@ -52,12 +51,10 @@ public:
 
     UFUNCTION()
     void OnStartQuestClicked();
-    //현재 배달 지정 장소 만 띄우기 때문에 사용 안됨
-    /*UFUNCTION(BlueprintImplementableEvent, Category = "UI")
-    void ShowWrongDeliveryUI();*/
+
     //타이머
     UFUNCTION(BlueprintImplementableEvent, Category = "HUD")
-    void UpdateTimer(int32 Minutes, int32 Seconds);
+    void UpdateTimer(int32 Minutes, int32 Seconds, int32 Miliseconds);
     
     //스테이지, 배달 개수 체크
     void UpdateStatus(int32 Stage, /*int32 Wave,*/ int32 Count, int32 Target);

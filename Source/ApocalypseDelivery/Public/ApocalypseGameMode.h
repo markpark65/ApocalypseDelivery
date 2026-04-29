@@ -105,9 +105,9 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameLogic")
     class ADeliveryPlatform* CurrentPlatform;
 
-    // 현재 스폰된 화물 (미니맵 표시용)
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameLogic")
-    class ADeliveryPackage* CurrentPackage;
+    // 맵에 존재하는 모든 플랫폼을 보관할 배열
+    UPROPERTY()
+    TArray<class ADeliveryPlatform*> AllPlatforms;
 
     // 공통 로딩 시퀀스 함수
     void ExecuteLoadingSequence(TFunction<void()> LogicAfterLoading);
