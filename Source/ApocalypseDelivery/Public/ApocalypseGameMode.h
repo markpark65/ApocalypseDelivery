@@ -76,6 +76,7 @@ public:
     class ADeliveryPlatform* CurrentTargetPlatform;
 
     int32 NumberOfDeliveries;
+
 protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;

@@ -36,12 +36,10 @@ void AApocalypseGameMode::BeginPlay()
     }
     else
     {
-        // [변경] 레벨이 이미 로드되었으므로 로딩 화면을 즉시 지웁니다.
         if (GI) GI->HideLoadingScreen();
 
         if (PC && PC->PlayerCameraManager)
         {
-            // [변경] 검은색 화면을 유지하는 대신, 즉시 서서히 밝아지는 연출을 실행합니다.
             PC->PlayerCameraManager->StartCameraFade(1.0f, 0.0f, 2.0f, FLinearColor::Black, false, false);
         }
     }
@@ -253,13 +251,13 @@ void AApocalypseGameMode::UpdateMinimapMarkers()
 }
 
 void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
-{
+{/*
     //기록 저장 코드
     AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
     if (IsValid(GS))
     {
         GS->SetNotPlaying();
-    }
+    }*/
     //------------
     DeliveredCount++;
     //CurrentWave++;
@@ -282,7 +280,6 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     {
         bIsTimerActive = false;
 
-        // [변경] 클리어 판정이 났으므로, 다음 행선지를 계산하기 위해 스테이지 번호를 1 증가시킵니다.
         if (GI)
         {
             GI->CurrentStage++;
@@ -295,7 +292,6 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
             PC->PlayerCameraManager->StartCameraFade(0.0f, 1.0f, 0.5f, FLinearColor::Black, false, true);
         }
 
-        // [변경] 중복된 조건문을 제거하고 결과 레벨로 가기 위한 EndGame()을 단일 호출합니다.
         EndGame();
         return;
     }
@@ -355,7 +351,9 @@ void AApocalypseGameMode::EndGame()
     }
     else
     {
+        GI->CurrentStage = 1;
         GI->PendingNextLevel = FName("MainMenu");    // 3스테이지 최종 클리어 시
+        UGameplayStatics::OpenLevel(GetWorld(), FName("EndLevel"));
     }
 
     //로딩 화면 띄우기
