@@ -338,6 +338,7 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
         {
             bIsTimerActive = false;
             EndGame(true);
+            return;
         }
         if (CurrentHUD)
         {
