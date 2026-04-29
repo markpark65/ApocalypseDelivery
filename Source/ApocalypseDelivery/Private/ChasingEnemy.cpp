@@ -109,6 +109,14 @@ void AChasingEnemy::ReturnBase()
 
 void AChasingEnemy::CheckTargetCondition()
 {
+	if (!IsValid(TargetPlayer))
+	{
+		IsChasing = false;
+		if (GetWorld()->GetTimerManager().IsTimerActive(DetectionTimer)) {
+			GetWorld()->GetTimerManager().ClearTimer(DetectionTimer);
+		}
+		return;
+	}
 	FHitResult Hit;
 	FCollisionQueryParams TraceParams;
 	TraceParams.AddIgnoredActor(this);
