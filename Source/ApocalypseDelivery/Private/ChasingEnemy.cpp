@@ -58,7 +58,7 @@ void AChasingEnemy::Tick(float DeltaTime)
 
 		if (!IsValid(MovementTarget)) return;
 
-		DrawDebugLine(GetWorld(), GetActorLocation(), MovementTarget->GetActorLocation(), FColor::Red, false, 0.017);
+		//DrawDebugLine(GetWorld(), GetActorLocation(), MovementTarget->GetActorLocation(), FColor::Red, false, 0.017);
 		Charge();
 	}
 	else
@@ -82,7 +82,7 @@ void AChasingEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 void AChasingEnemy::Charge() {
 	if (!MovementComp) return;
-	DrawDebugLine(GetWorld(), GetActorLocation(), TargetPlayer->GetActorLocation(), FColor::Red, false, 0.017);
+	//DrawDebugLine(GetWorld(), GetActorLocation(), TargetPlayer->GetActorLocation(), FColor::Red, false, 0.017);
 	FVector NewMovement = (TargetPlayer->GetActorLocation() - GetActorLocation()).GetSafeNormal();// * MovementSpeed;
 	MovementComp->AddInputVector(NewMovement);
 
@@ -104,7 +104,7 @@ void AChasingEnemy::CheckTargetCondition()
 {
 	TArray<AActor*> OverlappedActors;
 	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), BasePosition, SearchRange, TArray<TEnumAsByte<EObjectTypeQuery>>(), ADrone::StaticClass(), TArray<AActor*>{ this }, OverlappedActors);
-	DrawDebugSphere(GetWorld(), BasePosition, SearchRange, 32, FColor::Cyan, false, DetectionInterval);
+	//DrawDebugSphere(GetWorld(), BasePosition, SearchRange, 32, FColor::Cyan, false, DetectionInterval);
 	for (AActor* Actor : OverlappedActors) {
 		ADrone* Drone = Cast<ADrone>(Actor);
 		if (!IsValid(Drone)) {
@@ -114,7 +114,7 @@ void AChasingEnemy::CheckTargetCondition()
 		FCollisionQueryParams TraceParams;
 		TraceParams.AddIgnoredActor(this);
 
-		DrawDebugLine(GetWorld(), GetActorLocation(), Drone->GetActorLocation(), FColor::Red, false, DetectionInterval);
+		//DrawDebugLine(GetWorld(), GetActorLocation(), Drone->GetActorLocation(), FColor::Red, false, DetectionInterval);
 		bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, GetActorLocation(),Drone->GetActorLocation(),ECC_Pawn, TraceParams);
 		if (bHit && Hit.GetActor() == Drone) {
 			TargetPlayer = Drone;

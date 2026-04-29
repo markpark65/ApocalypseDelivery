@@ -325,11 +325,6 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     //CurrentPlatform = nullptr;
     //CurrentTargetPlatform = nullptr;
     // ────────────────
-
-    if (TargetPlatform)
-    {
-        TargetPlatform->MarkAsUsed();
-    }
     
     if (DeliveredCount >= NumberOfDeliveries)
     {
