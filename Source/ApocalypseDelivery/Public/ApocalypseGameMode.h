@@ -79,6 +79,8 @@ public:
 protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
+    
+    /*
     // 성공 시 띄울 위젯 클래스
     UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<class UUserWidget> SuccessWidgetClass;
@@ -86,6 +88,7 @@ protected:
     // 실패 시 띄울 위젯 클래스
     UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<class UUserWidget> FailureWidgetClass;
+    */
 
     UPROPERTY(EditAnywhere, Category = "Sound")
     class USoundBase* BackgroundMusic;

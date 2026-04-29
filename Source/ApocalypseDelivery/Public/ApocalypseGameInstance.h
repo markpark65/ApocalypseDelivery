@@ -87,6 +87,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameRules")
     int32 CurrentStage;
 
+    //결과 창 이후에 이동할 실제 스테이지 이름
+    UPROPERTY(BlueprintReadWrite, Category = "GameLogic")
+    FName PendingNextLevel;
+
     //치트용
     UFUNCTION(Exec)
     void IncreaseStageNumber() {

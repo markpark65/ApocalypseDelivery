@@ -36,18 +36,14 @@ void AApocalypseGameMode::BeginPlay()
     }
     else
     {
+        // [변경] 레벨이 이미 로드되었으므로 로딩 화면을 즉시 지웁니다.
+        if (GI) GI->HideLoadingScreen();
+
         if (PC && PC->PlayerCameraManager)
         {
-            //다음 레벨이 불러오자마자 화면을 즉시 검은색으로 강제 유지
-            PC->PlayerCameraManager->StartCameraFade(1.0f, 1.0f, 0.0f, FLinearColor::Black, false, true);
+            // [변경] 검은색 화면을 유지하는 대신, 즉시 서서히 밝아지는 연출을 실행합니다.
+            PC->PlayerCameraManager->StartCameraFade(1.0f, 0.0f, 2.0f, FLinearColor::Black, false, false);
         }
-
-        //레벨 시작과 동시에 로딩 위젯 5초 최상단 유지 후 밝아지는 시퀀스 실행
-        ExecuteLoadingSequence([]()
-            {
-                // 5초 로딩 완료 후 특별히 추가 실행할 콜백 로직은 없음
-            }
-        );
     }
 
     //상자 배달지점 갯수 확인
@@ -91,7 +87,6 @@ void AApocalypseGameMode::BeginPlay()
     if (PC)
     {
         PC->bShowMouseCursor = true;
-        // Game과 UI를 동시에 조작할 수 있게 설정
         FInputModeGameAndUI InputMode;
         if (CurrentHUD)
         {
@@ -263,50 +258,33 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     
     if (DeliveredCount >= NumberOfDeliveries)
     {
-        GI->CurrentStage++;
-        if (GI->CurrentStage > 3) // 모든 스테이지 클리어 시
-        {
-            bIsTimerActive = false;
-            EndGame(/*true*/);
-            return;
-        }
-        if (CurrentHUD)
-        {
-            // HUD에 스테이지 클리어 UI 호출
-            CurrentHUD->ShowStageClearUI();
-        }
-        FTimerHandle LevelTransitionTimer;
-        GetWorldTimerManager().SetTimer(LevelTransitionTimer, this, &AApocalypseGameMode::MoveToNextLevel, 3.0f, false);
+        bIsTimerActive = false;
 
-        //기존 레벨이 사라지기 직전에 마지막으로 0.5초간 서서히 검은 화면 전환
+        // [변경] 클리어 판정이 났으므로, 다음 행선지를 계산하기 위해 스테이지 번호를 1 증가시킵니다.
+        if (GI)
+        {
+            GI->CurrentStage++;
+        }
+
+        //페이드 시작
         APlayerController* PC = GetWorld()->GetFirstPlayerController();
         if (PC && PC->PlayerCameraManager)
         {
             PC->PlayerCameraManager->StartCameraFade(0.0f, 1.0f, 0.5f, FLinearColor::Black, false, true);
         }
 
-        // 0.5초 대기(페이드 아웃 완료) 직후 바로 다음 레벨 호출
-        FTimerHandle DelayTimer;
-        GetWorldTimerManager().SetTimer(DelayTimer, [this]()
-            {
-                this->MoveToNextLevel();
-            },
-            0.5f, false);
-
+        // [변경] 중복된 조건문을 제거하고 결과 레벨로 가기 위한 EndGame()을 단일 호출합니다.
+        EndGame();
         return;
     }
 
-    if(CurrentHUD)
+    //배달 성공 시 HUD 업데이트
+    if (CurrentHUD)
     {
         CurrentHUD->ShowDeliverySuccessUI();
-        FString StageInfo = FString::Printf(TEXT("%d - %d"), GI->CurrentStage, 99); //뒤에 숫자 지금 안쓰임
-        CurrentHUD->UpdateStageText(StageInfo);
-        CurrentHUD->UpdateStats(1.0f, 0.0f);
         CurrentHUD->UpdateStatus(GI->CurrentStage, DeliveredCount, NumberOfDeliveries);
         StartQuest();
-
     }
-
 }
 
 void AApocalypseGameMode::UpdateDifficulty()
@@ -337,7 +315,7 @@ void AApocalypseGameMode::GameOver()
     UGameplayStatics::SetGamePaused(GetWorld(), true);
 }
 
-void AApocalypseGameMode::EndGame(/*bool bIsVictory*/)
+void AApocalypseGameMode::EndGame()
 {
     //기록 저장 코드
     AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
@@ -347,53 +325,41 @@ void AApocalypseGameMode::EndGame(/*bool bIsVictory*/)
     }
     //------------
 
-    // UGameplayStatics::SetGamePaused는 결과창이 로딩 뒤에 깔릴 때 실행하도록 람다로 이동
-    if (BGMComponent)
+    if (BGMComponent) BGMComponent->FadeOut(1.0f, 0.0f);
+
+    if (GI->CurrentStage <= 3)
     {
-        BGMComponent->FadeOut(1.0f, 0.0f);
+        GI->PendingNextLevel = FName("MapDraft_EJ"); // 다음 스테이지로 쓰일 맵
+    }
+    else
+    {
+        GI->PendingNextLevel = FName("MainMenu");    // 3스테이지 최종 클리어 시
     }
 
-    //0.5초간 서서히 검은 화면으로 전환
-    APlayerController* PC = GetWorld()->GetFirstPlayerController();
-    if (PC && PC->PlayerCameraManager)
-    {
-        PC->PlayerCameraManager->StartCameraFade(0.0f, 1.0f, 0.5f, FLinearColor::Black, false, true);
-    }
+    //로딩 화면 띄우기
+    GI->ShowLoadingScreen();
 
-    //0.5초 뒤 로딩 시퀀스 시작
-    FTimerHandle ResultTimer;
-    GetWorldTimerManager().SetTimer(ResultTimer, [this, /*bIsVictory,*/ PC]()
-        {
-            //로딩 위젯을 띄우기 직전, 로딩 위젯 바로 아래(Z-Order:0)에 결과 위젯을 먼저 생성해둠
-            TSubclassOf<UUserWidget> WidgetToCreate = /*bIsVictory ? */SuccessWidgetClass/* : FailureWidgetClass*/;
-            if (WidgetToCreate)
-            {
-                UUserWidget* ResultWidget = CreateWidget<UUserWidget>(GetWorld(), WidgetToCreate);
-                if (ResultWidget)
-                {
-                    ResultWidget->AddToViewport(0);
-                }
-            }
-
-            //직후 강제로 로딩 위젯을 5초간 최상단에 덮어씌움
-            this->ExecuteLoadingSequence([this, PC]()
-                {
-                    //5초 로딩 유지 시간이 끝나고 화면이 밝아질 때 게임 일시정지 및 조작 설정
-                    UGameplayStatics::SetGamePaused(GetWorld(), true);
-                    if (PC)
-                    {
-                        PC->bShowMouseCursor = true;
-                        FInputModeUIOnly InputMode;
-                        PC->SetInputMode(InputMode);
-                    }
-                }
-            );
-        },
-        0.5f, false);
+    //어디서든 게임이 끝나면 무조건 결과 레벨로 이동
+    UGameplayStatics::OpenLevel(GetWorld(), FName("ResultLevel"));
 }
 
 void AApocalypseGameMode::MoveToNextLevel()
 {
+
+    if (!GI) return;
+
+    // 1. 다음에 가야 할 실제 레벨 계산
+    GI->CurrentStage++;
+    FName ActualNextLevel = (GI->CurrentStage <= 3) ? FName("MapDraft_EJ") : FName("MainMenu");
+
+    // 2. GameInstance에 목적지 저장
+    GI->PendingNextLevel = ActualNextLevel;
+
+    // 3. 실제 이동은 결과 전용 레벨로 수행
+    GI->ShowLoadingScreen();
+    UGameplayStatics::OpenLevel(GetWorld(), FName("ResultLevel")); // 결과 레벨 이름
+
+    /* 구 로직
     FName NextLevelName;
 
     if (GI->CurrentStage <= 3)
@@ -414,6 +380,7 @@ void AApocalypseGameMode::MoveToNextLevel()
 
     // 맵 이동 실행
     UGameplayStatics::OpenLevel(GetWorld(), NextLevelName);
+    */
 }
 
 // 로딩 시퀀스 구현 (Fade Out -> 5초 대기 -> Logic 실행 -> Fade In)
