@@ -412,6 +412,7 @@ void ADrone::ResetDelayedInput()
 void ADrone::AddTeleport()
 {
 	HasTeleport = true;
+	GM->CurrentHUD->SetInteractionPrompt(true,"Press 'V' to store a teleport coordinate.");
 }
 void ADrone::UseTeleport()
 {
@@ -419,6 +420,7 @@ void ADrone::UseTeleport()
 		if (TeleportCoordinate == FVector::ZeroVector) {
 			TeleportCoordinate = GetActorLocation();
 			UE_LOG(LogTemp, Warning, TEXT("TeleportCoordinate has set - %f %f %f"), TeleportCoordinate.X, TeleportCoordinate.Y, TeleportCoordinate.Z);
+			GM->CurrentHUD->SetInteractionPrompt(true, "Press 'V' to teleport.");
 		}
 		else {
 			SetActorLocation(TeleportCoordinate);
@@ -427,6 +429,7 @@ void ADrone::UseTeleport()
 			HasTeleport = false;
 			TeleportCoordinate = FVector::ZeroVector;
 			UE_LOG(LogTemp, Warning, TEXT("Teleport Completed - %f %f %f"), TeleportCoordinate.X, TeleportCoordinate.Y, TeleportCoordinate.Z);
+			GM->CurrentHUD->SetInteractionPrompt(false,"");
 		}
 	}
 	else {
@@ -441,7 +444,7 @@ void ADrone::ApplyImpulseVelocity(FVector Impulse)
 }
 
 
-//운석 충돌 로직
+//충돌시 효과음 로직
 void ADrone::OnDroneHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (!IsValid(OtherActor)) return;
@@ -450,6 +453,7 @@ void ADrone::OnDroneHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 		CrushAudioComp = UGameplayStatics::SpawnSound2D(GetWorld(), CrushSound);
 	}
 }
+/*
 void ADrone::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
@@ -477,7 +481,7 @@ void ADrone::NotifyActorEndOverlap(AActor* OtherActor)
 			}
 		}
 	}
-}
+}*/
 
 //상태변화 Progress Bar 구현 로직
 TArray<FEffectUIStatus> ADrone::GetActiveEffectsStatus() const

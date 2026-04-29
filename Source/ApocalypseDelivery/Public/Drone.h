@@ -47,7 +47,7 @@ public:
 	ADrone();
 
     //속도 효과
-    UFUNCTION(BlueprintCallable)
+    UFUNCTION(BlueprintCallable, Exec)
     void SetTemporarySpeed(float Multiplier, float Duration);
     
     //조작 효과
@@ -175,8 +175,8 @@ protected:
     UFUNCTION()
     void OnDroneHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-    virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
-    virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+    //virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+    //virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
 
     //텔레포트
     bool HasTeleport;
