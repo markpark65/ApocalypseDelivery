@@ -68,7 +68,7 @@ public:
     class UApocalypseHUD* CurrentHUD;
 
     UFUNCTION(BlueprintCallable)
-    void EndGame(bool bIsVictory);
+    void EndGame(/*bool bIsVictory*/);
 
     FORCEINLINE bool IsTimerActive() const { return bIsTimerActive; }
 

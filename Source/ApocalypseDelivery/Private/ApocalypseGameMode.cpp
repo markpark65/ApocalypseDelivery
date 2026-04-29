@@ -337,7 +337,7 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
         if (GI->CurrentStage > 3) // 모든 스테이지 클리어 시
         {
             bIsTimerActive = false;
-            EndGame(true);
+            EndGame(/*true*/);
             return;
         }
         if (CurrentHUD)
@@ -407,7 +407,7 @@ void AApocalypseGameMode::GameOver()
     UGameplayStatics::SetGamePaused(GetWorld(), true);
 }
 
-void AApocalypseGameMode::EndGame(bool bIsVictory)
+void AApocalypseGameMode::EndGame(/*bool bIsVictory*/)
 {
     //기록 저장 코드
     AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
@@ -432,10 +432,10 @@ void AApocalypseGameMode::EndGame(bool bIsVictory)
 
     //0.5초 뒤 로딩 시퀀스 시작
     FTimerHandle ResultTimer;
-    GetWorldTimerManager().SetTimer(ResultTimer, [this, bIsVictory, PC]()
+    GetWorldTimerManager().SetTimer(ResultTimer, [this, /*bIsVictory,*/ PC]()
         {
             //로딩 위젯을 띄우기 직전, 로딩 위젯 바로 아래(Z-Order:0)에 결과 위젯을 먼저 생성해둠
-            TSubclassOf<UUserWidget> WidgetToCreate = bIsVictory ? SuccessWidgetClass : FailureWidgetClass;
+            TSubclassOf<UUserWidget> WidgetToCreate = /*bIsVictory ? */SuccessWidgetClass/* : FailureWidgetClass*/;
             if (WidgetToCreate)
             {
                 UUserWidget* ResultWidget = CreateWidget<UUserWidget>(GetWorld(), WidgetToCreate);
