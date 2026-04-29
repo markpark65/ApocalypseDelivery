@@ -53,14 +53,36 @@ void AApocalypseGameMode::BeginPlay()
     //상자 배달지점 갯수 확인
     TArray<AActor*> FoundPlatforms;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADeliveryPlatform::StaticClass(), FoundPlatforms);
-    NumberOfDeliveries = FoundPlatforms.Num();
-
     for (AActor* Actor : FoundPlatforms)
     {
+        if (Actor->ActorHasTag("Pro") && GI->CurrentStage < 3)
+        {
+            Actor->Destroy(); // 스테이지 3 미만이면 Pro 플랫폼 파괴
+            continue;
+        }
+        if (Actor->ActorHasTag("Intermediate") && GI->CurrentStage < 2)
+        {
+            Actor->Destroy(); // 스테이지 2 미만이면 Intermediate 플랫폼 파괴
+            continue;
+        }
+
+        // 현재 있는 플랫폼 배열에 넣고 개수를 셉니다.
         if (ADeliveryPlatform* Platform = Cast<ADeliveryPlatform>(Actor))
         {
-            AllPlatforms.Add(Platform);
+            if (!Actor->ActorHasTag("Fake"))
+            {
+                AllPlatforms.Add(Platform);
+            }
+            else {
+                AllPlatforms.Add(Platform);
+            }
         }
+    }
+
+    //실제로 배달해야 할 개수만 설정
+    NumberOfDeliveries = 0;
+    for (auto P : AllPlatforms) {
+        if (!P->ActorHasTag("Fake")) NumberOfDeliveries++;
     }
 
     //CurrentTimeLeft = TimeLimit;

@@ -50,7 +50,7 @@ void AChasingEnemy::BeginPlay()
 		WarningAudioComp->Play();
 	}
 	RecognitionSphere->SetWorldLocation(GetActorLocation());
-	DrawDebugSphere(GetWorld(), RecognitionSphere->GetComponentLocation(), RecognitionSphere->GetUnscaledSphereRadius(), 32, FColor::Cyan, false, 3600);
+	//DrawDebugSphere(GetWorld(), RecognitionSphere->GetComponentLocation(), RecognitionSphere->GetUnscaledSphereRadius(), 32, FColor::Cyan, false, 3600);
 	SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AChasingEnemy::OnPlayerCollision);
 	RecognitionSphere->OnComponentBeginOverlap.AddDynamic(this, &AChasingEnemy::OnRecogRangeEntered);
 	RecognitionSphere->OnComponentEndOverlap.AddDynamic(this, &AChasingEnemy::OnRecogRangeExit);
@@ -114,7 +114,7 @@ void AChasingEnemy::CheckTargetCondition()
 	FHitResult Hit;
 	FCollisionQueryParams TraceParams;
 	TraceParams.AddIgnoredActor(this);
-	DrawDebugLine(GetWorld(), GetActorLocation(), TargetPlayer->GetActorLocation(), FColor::Red, false, DetectionInterval);
+	//DrawDebugLine(GetWorld(), GetActorLocation(), TargetPlayer->GetActorLocation(), FColor::Red, false, DetectionInterval);
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, GetActorLocation(), TargetPlayer->GetActorLocation(),ECC_Pawn, TraceParams);
 	if (bHit && Hit.GetActor() == TargetPlayer) {
 		IsChasing = true;
