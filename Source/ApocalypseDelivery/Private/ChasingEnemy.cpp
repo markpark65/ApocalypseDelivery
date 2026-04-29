@@ -7,6 +7,7 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -20,11 +21,20 @@ AChasingEnemy::AChasingEnemy()
 	PrimaryActorTick.bCanEverTick = true;
 	SphereComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	RootComponent = SphereComp;
+
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetupAttachment(RootComponent);
+
 	MovementComp = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComp"));
 	MovementComp->SetUpdatedComponent(SphereComp);
 
+	RecognitionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("RecognitionSphere"));
+	RecognitionSphere->SetAbsolute(true, false, false);
+	RecognitionSphere->SetupAttachment(RootComponent);
+
+	WarningAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("WarningAudioComp"));
+	WarningAudioComp->SetupAttachment(RootComponent);
+	WarningAudioComp->bAutoActivate = false;
 	IsRepulsive = true;
 	
 }
@@ -37,15 +47,15 @@ void AChasingEnemy::BeginPlay()
 	IsChasing = false;
 	TargetPlayer = nullptr;
 
-	GetWorld()->GetTimerManager().SetTimer(DetectionTimer, this, &AChasingEnemy::CheckTargetCondition, DetectionInterval, true);
-	
-	if (IsValid(WarningSound)) {
-		UE_LOG(LogTemp, Warning, TEXT("Attaching Warning sound!"));
-		WarningAudioComp = UGameplayStatics::SpawnSoundAttached(WarningSound, RootComponent);
+	if (IsValid(WarningAudioComp->Sound))
+	{
+		WarningAudioComp->Play();
 	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("Warning sound not valid!"));
-	}
+	RecognitionSphere->SetWorldLocation(GetActorLocation());
+	//DrawDebugSphere(GetWorld(), RecognitionSphere->GetComponentLocation(), RecognitionSphere->GetUnscaledSphereRadius(), 32, FColor::Cyan, false, 3600);
+	SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AChasingEnemy::OnPlayerCollision);
+	RecognitionSphere->OnComponentBeginOverlap.AddDynamic(this, &AChasingEnemy::OnRecogRangeEntered);
+	RecognitionSphere->OnComponentEndOverlap.AddDynamic(this, &AChasingEnemy::OnRecogRangeExit);
 }
 
 // Called every frame
@@ -57,8 +67,6 @@ void AChasingEnemy::Tick(float DeltaTime)
 		AActor* MovementTarget = Cast<ADrone>(TargetPlayer);
 
 		if (!IsValid(MovementTarget)) return;
-
-		//DrawDebugLine(GetWorld(), GetActorLocation(), MovementTarget->GetActorLocation(), FColor::Red, false, 0.017);
 		Charge();
 	}
 	else
@@ -82,7 +90,6 @@ void AChasingEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 void AChasingEnemy::Charge() {
 	if (!MovementComp) return;
-	//DrawDebugLine(GetWorld(), GetActorLocation(), TargetPlayer->GetActorLocation(), FColor::Red, false, 0.017);
 	FVector NewMovement = (TargetPlayer->GetActorLocation() - GetActorLocation()).GetSafeNormal();// * MovementSpeed;
 	MovementComp->AddInputVector(NewMovement);
 
@@ -102,27 +109,16 @@ void AChasingEnemy::ReturnBase()
 
 void AChasingEnemy::CheckTargetCondition()
 {
-	TArray<AActor*> OverlappedActors;
-	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), BasePosition, SearchRange, TArray<TEnumAsByte<EObjectTypeQuery>>(), ADrone::StaticClass(), TArray<AActor*>{ this }, OverlappedActors);
-	//DrawDebugSphere(GetWorld(), BasePosition, SearchRange, 32, FColor::Cyan, false, DetectionInterval);
-	for (AActor* Actor : OverlappedActors) {
-		ADrone* Drone = Cast<ADrone>(Actor);
-		if (!IsValid(Drone)) {
-			continue;
-		}
-		FHitResult Hit;
-		FCollisionQueryParams TraceParams;
-		TraceParams.AddIgnoredActor(this);
-
-		//DrawDebugLine(GetWorld(), GetActorLocation(), Drone->GetActorLocation(), FColor::Red, false, DetectionInterval);
-		bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, GetActorLocation(),Drone->GetActorLocation(),ECC_Pawn, TraceParams);
-		if (bHit && Hit.GetActor() == Drone) {
-			TargetPlayer = Drone;
-			IsChasing = true;
-			return;
-		}
+	FHitResult Hit;
+	FCollisionQueryParams TraceParams;
+	TraceParams.AddIgnoredActor(this);
+	//DrawDebugLine(GetWorld(), GetActorLocation(), TargetPlayer->GetActorLocation(), FColor::Red, false, DetectionInterval);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, GetActorLocation(), TargetPlayer->GetActorLocation(),ECC_Pawn, TraceParams);
+	if (bHit && Hit.GetActor() == TargetPlayer) {
+		IsChasing = true;
+		return;
 	}
-
+	
 	//Failed to Find
 	TargetPlayer = nullptr;
 	IsChasing = false;
@@ -153,5 +149,31 @@ void AChasingEnemy::ApplyEffect_Implementation(class ADrone* Drone) {
 		}
 	}
 	PlayOverlapEffects();
+	if (IsValid(WarningAudioComp) && WarningAudioComp->IsPlaying()) WarningAudioComp->Stop();
 	Destroy();
+}
+
+
+void AChasingEnemy::OnPlayerCollision(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	ADrone* PlayerDrone = Cast<ADrone>(OtherActor);
+	if (IsValid(PlayerDrone) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+		ApplyEffect(PlayerDrone);
+	}
+}
+
+void AChasingEnemy::OnRecogRangeEntered(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+		TargetPlayer = OtherActor;
+		GetWorld()->GetTimerManager().SetTimer(DetectionTimer, this, &AChasingEnemy::CheckTargetCondition, DetectionInterval, true);
+	}
+}
+
+void AChasingEnemy::OnRecogRangeExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+	if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+		TargetPlayer = nullptr;
+		if (GetWorld()->GetTimerManager().IsTimerActive(DetectionTimer)) {
+			GetWorld()->GetTimerManager().ClearTimer(DetectionTimer);
+		}
+	}
 }

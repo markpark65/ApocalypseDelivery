@@ -429,16 +429,17 @@ void AApocalypseGameMode::ExecuteLoadingSequence(TFunction<void()> LogicAfterLoa
 
     //5초 대기 후 로직 실행
     FTimerHandle TimerHandle;
-    GetWorldTimerManager().SetTimer(TimerHandle, [this, /*GI,*/ PC, LogicAfterLoading]()
+    UApocalypseGameInstance* TempGI = GI;
+    GetWorldTimerManager().SetTimer(TimerHandle, [/*this, GI*/ TempGI, PC, LogicAfterLoading]()
         {
             //전달받은 핵심 로직 실행
             if (LogicAfterLoading) LogicAfterLoading();
 
             //5초 끝나면 로딩 화면 사라짐
-            GI->HideLoadingScreen();
+            TempGI->HideLoadingScreen();
 
             //5초 끝나면 동시에 3초간 서서히 화면 밝기 복구
-            if (PC->PlayerCameraManager)
+            if (IsValid(PC) && PC->PlayerCameraManager)
             {
                 PC->PlayerCameraManager->StartCameraFade(1.0f, 0.0f, 3.0f, FLinearColor::Black, false, false);
             }

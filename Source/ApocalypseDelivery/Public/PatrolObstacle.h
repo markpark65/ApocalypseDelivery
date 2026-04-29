@@ -40,13 +40,9 @@ protected:
 	bool IsLoop = true;          // 순환 여부
 
 	//드론 이동 SFX
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
-	USoundBase* MovementSound;
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sound")
 	UAudioComponent* MovementAudioComp;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
-	USoundBase* WarningSound;
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sound")
 	UAudioComponent* WarningAudioComp;
 
 	UFUNCTION()

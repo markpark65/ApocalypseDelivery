@@ -39,6 +39,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crow)
 	UFloatingPawnMovement* MovementComp;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crow)
+	USphereComponent* RecognitionSphere;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Crow)
 	float SearchRange;
@@ -52,6 +55,8 @@ protected:
 	float RotationInterpRate;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Crow)
 	bool IsRepulsive;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Crow)
+	bool bUsingSearch;
 
 	FVector BasePosition;
 	AActor* TargetPlayer;
@@ -80,13 +85,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	TSubclassOf<class UUserWidget> ItemMessageWidgetClass;
 
-	//Warning Effects
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
-	class USoundBase* WarningSound;
-	UPROPERTY()
+	//Warning Sound
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sound")
 	UAudioComponent* WarningAudioComp;
 
 	void PlayOverlapEffects();
+
+	//드론 영역 출입 감지
+	UFUNCTION()
+	void OnPlayerCollision(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void OnRecogRangeEntered(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void OnRecogRangeExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION(BlueprintNativeEvent)
 	void ApplyEffect(ADrone* Drone);

@@ -4,6 +4,7 @@
 #include "PatrolObstacle.h"
 #include "Drone.h"
 
+#include "Components/BoxComponent.h"
 #include "Components/SplineComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
@@ -23,6 +24,14 @@ APatrolObstacle::APatrolObstacle()
     WarningBound = CreateDefaultSubobject<USphereComponent>(TEXT("WarningBound"));
     WarningBound->SetupAttachment(MeshComp);
 
+    MovementAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("MovementAudioComp"));
+    MovementAudioComp->SetupAttachment(MeshComp);
+    MovementAudioComp->bAutoActivate = false;
+
+    WarningAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("WarningAudioComp"));
+    WarningAudioComp->SetupAttachment(MeshComp);
+    WarningAudioComp->bAutoActivate = false;
+
 	MovementSpeed = 200.0f;
 	IsLoop = true;
 }
@@ -33,48 +42,46 @@ void APatrolObstacle::BeginPlay()
 	Super::BeginPlay();
 	CurrentDistance = 0.0f;
 
-    if (MovementSound)
+    if (IsValid(MovementAudioComp->Sound))
     {
-        MovementAudioComp = UGameplayStatics::SpawnSoundAttached(MovementSound, MeshComp);
+        MovementAudioComp->Play();
     }
 
-    if (WarningSound)
-    {
-        WarningAudioComp = UGameplayStatics::SpawnSoundAttached(WarningSound, MeshComp);
-        if (WarningAudioComp)
-        {
-            WarningAudioComp->Stop();
-        }
-    }
-    if(IsValid(MovementSound)) MovementAudioComp = UGameplayStatics::SpawnSoundAttached(MovementSound, MeshComp);
-    if (IsValid(WarningSound)) {
-        WarningAudioComp = UGameplayStatics::SpawnSoundAttached(WarningSound, MeshComp);
-        if (IsValid(WarningAudioComp)) {
-            WarningAudioComp->Stop();
-            WarningBound->OnComponentBeginOverlap.AddDynamic(this, &APatrolObstacle::StartWarning);
-            WarningBound->OnComponentEndOverlap.AddDynamic(this, &APatrolObstacle::EndWarning);
-        }
+    if (IsValid(WarningAudioComp->Sound)) {
+        WarningBound->OnComponentBeginOverlap.AddDynamic(this, &APatrolObstacle::StartWarning);
+        WarningBound->OnComponentEndOverlap.AddDynamic(this, &APatrolObstacle::EndWarning);
     }
 }
 
 void APatrolObstacle::StartWarning(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (!IsValid(OtherActor) || !OtherActor->IsA(ADrone::StaticClass())) return;
-    if(IsValid(WarningAudioComp) && !(WarningAudioComp->IsPlaying())) {
+    if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass())) {
+        UE_LOG(LogTemp, Warning, TEXT("entered"));
+        if (!IsValid(WarningAudioComp) || !(WarningAudioComp->IsPlaying())) {
+            UE_LOG(LogTemp, Warning, TEXT("Playing sound"));
             WarningAudioComp->Play();
+        }
     }
 }
 
 void APatrolObstacle::EndWarning(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-    if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(WarningAudioComp))
+    
+    if (IsValid(OtherActor) && OtherActor->IsA(ADrone::StaticClass()) && IsValid(OtherComp) && OtherComp->IsA(UBoxComponent::StaticClass()))
     {
+        UE_LOG(LogTemp, Warning, TEXT("exited"));
+        UE_LOG(LogTemp, Warning, TEXT("WarningAudioComp valid: %d"), IsValid(WarningAudioComp));
+
+        if (!IsValid(WarningAudioComp)) return;
+
+        UE_LOG(LogTemp, Warning, TEXT("IsPlaying: %d"), WarningAudioComp->IsPlaying());
+
         if (WarningAudioComp->IsPlaying())
         {
+            UE_LOG(LogTemp, Warning, TEXT("Stopping sound"));
             WarningAudioComp->Stop();
         }
     }
-    
 }
 
 // Called every frame
