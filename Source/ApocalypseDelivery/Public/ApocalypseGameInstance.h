@@ -33,16 +33,17 @@ public:
     UFUNCTION(BlueprintCallable)
     void UpdateRecord(int32 Stage, float ElapsedTime)
     {
-        DeliveryRecords[Stage].Records.Add(ElapsedTime);
-        DeliveryRecords[Stage].Records.Sort();
+        int32 StageIndex = Stage - 1;
+        DeliveryRecords[StageIndex].Records.Add(ElapsedTime);
+        DeliveryRecords[StageIndex].Records.Sort();
         //방금 넣은 기록이 10위 안에 드는지 검사
-        int32 MyRank = DeliveryRecords[Stage].Records.Find(ElapsedTime);
+        int32 MyRank = DeliveryRecords[StageIndex].Records.Find(ElapsedTime);
         bIsNewRecord = (MyRank != INDEX_NONE && MyRank < 10);
 
         // 10개가 넘어가면 하위 기록 자르기
-        if (DeliveryRecords[Stage].Records.Num() > 10)
+        if (DeliveryRecords[StageIndex].Records.Num() > 10)
         {
-            DeliveryRecords[Stage].Records.SetNum(10);
+            DeliveryRecords[StageIndex].Records.SetNum(10);
         }
         /*//테스트용 임의 값
         DeliveryRecords[0].Records.Add(10);

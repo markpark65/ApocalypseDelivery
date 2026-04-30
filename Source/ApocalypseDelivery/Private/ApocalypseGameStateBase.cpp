@@ -39,7 +39,7 @@ void AApocalypseGameStateBase::SetPlaying() {
 void AApocalypseGameStateBase::SetNotPlaying() {
 	IsPlaying = false;
 	UApocalypseGameInstance * GI = GetGameInstance<UApocalypseGameInstance>();
-	if(IsValid(GI)) GI->UpdateRecord(0, TimeElapsed); //need to change to currentlevel
+	if(IsValid(GI)) GI->UpdateRecord(GI->CurrentStage, TimeElapsed);
 }
 float AApocalypseGameStateBase::GetTimeElapsed() {
 	return TimeElapsed;
