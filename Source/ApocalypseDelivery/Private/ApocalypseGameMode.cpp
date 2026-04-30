@@ -251,23 +251,9 @@ void AApocalypseGameMode::UpdateMinimapMarkers()
 }
 
 void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
-{/*
-    //기록 저장 코드
-    AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
-    if (IsValid(GS))
-    {
-        GS->SetNotPlaying();
-    }*/
-    //------------
+{
     DeliveredCount++;
     //CurrentWave++;
-
-
-    // 다음 StartQuest 전까지 미니맵 마커를 비워둔다.
-    //CurrentPackage = nullptr;
-    //CurrentPlatform = nullptr;
-    //CurrentTargetPlatform = nullptr;
-    // ────────────────
     
     /*MarkAsUsed() ADeliveryPlatform에서 직접 호출하도록 수정 완료
     if (TargetPlatform)
@@ -279,11 +265,14 @@ void AApocalypseGameMode::OnPackageDelivered(ADeliveryPlatform* TargetPlatform)
     if (DeliveredCount >= NumberOfDeliveries)
     {
         bIsTimerActive = false;
-
-        if (GI)
+        // [변경] 스테이지 번호를 올리기 '직전'에, 현재 스테이지 번호로 클리어 타임을 저장합니다.
+        AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
+        if (IsValid(GS))
         {
-            GI->CurrentStage++;
+            GI->UpdateRecord(GI->CurrentStage, GS->GetTimeElapsed());
         }
+
+            GI->CurrentStage++;
 
         //페이드 시작
         APlayerController* PC = GetWorld()->GetFirstPlayerController();
@@ -335,6 +324,7 @@ void AApocalypseGameMode::GameOver()
 
 void AApocalypseGameMode::EndGame()
 {
+    /*
     //기록 저장 코드
     AApocalypseGameStateBase* GS = GetGameState<AApocalypseGameStateBase>();
     if (IsValid(GS))
@@ -342,7 +332,7 @@ void AApocalypseGameMode::EndGame()
         GS->SetNotPlaying();
     }
     //------------
-
+    */
     if (BGMComponent) BGMComponent->FadeOut(1.0f, 0.0f);
 
     if (GI->CurrentStage <= 3)

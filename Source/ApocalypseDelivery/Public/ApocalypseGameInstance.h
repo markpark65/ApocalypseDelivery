@@ -34,36 +34,42 @@ public:
     void UpdateRecord(int32 Stage, float ElapsedTime)
     {
         int32 StageIndex = Stage - 1;
-        DeliveryRecords[StageIndex].Records.Add(ElapsedTime);
-        DeliveryRecords[StageIndex].Records.Sort();
-        //방금 넣은 기록이 10위 안에 드는지 검사
-        int32 MyRank = DeliveryRecords[StageIndex].Records.Find(ElapsedTime);
-        bIsNewRecord = (MyRank != INDEX_NONE && MyRank < 10);
 
-        // 10개가 넘어가면 하위 기록 자르기
-        if (DeliveryRecords[StageIndex].Records.Num() > 10)
+        LatestRecordIndex = StageIndex;
+
+        if (DeliveryRecords.IsValidIndex(StageIndex))
         {
-            DeliveryRecords[StageIndex].Records.SetNum(10);
+            DeliveryRecords[StageIndex].Records.Add(ElapsedTime);
+            DeliveryRecords[StageIndex].Records.Sort();
+            //방금 넣은 기록이 10위 안에 드는지 검사
+            int32 MyRank = DeliveryRecords[StageIndex].Records.Find(ElapsedTime);
+            bIsNewRecord = (MyRank != INDEX_NONE && MyRank < 10);
+
+            // 10개가 넘어가면 하위 기록 자르기
+            if (DeliveryRecords[StageIndex].Records.Num() > 10)
+            {
+                DeliveryRecords[StageIndex].Records.SetNum(10);
+            }
+            /*//테스트용 임의 값
+            DeliveryRecords[0].Records.Add(10);
+            DeliveryRecords[0].Records.Add(20);
+            DeliveryRecords[0].Records.Add(30);
+            DeliveryRecords[0].Records.Add(40);
+            DeliveryRecords[0].Records.Add(50);
+            DeliveryRecords[0].Records.Add(60);
+            DeliveryRecords[1].Records.Add(50);
+            DeliveryRecords[1].Records.Add(60);
+            DeliveryRecords[2].Records.Add(50);
+            DeliveryRecords[2].Records.Add(60);
+            //--------------------------
+            DeliveryRecords[0].Records.Sort();
+            DeliveryRecords[1].Records.Sort();
+            DeliveryRecords[2].Records.Sort();
+            if (DeliveryRecords[0].Records.Num() > 10) DeliveryRecords[0].Records.SetNum(10);
+            if (DeliveryRecords[1].Records.Num() > 10) DeliveryRecords[1].Records.SetNum(10);
+            if (DeliveryRecords[2].Records.Num() > 10) DeliveryRecords[2].Records.SetNum(10);*/
+            //if (DeliveryRecords[Stage].Records.Num() > 10) DeliveryRecords[Stage].Records.SetNum(10);
         }
-        /*//테스트용 임의 값
-        DeliveryRecords[0].Records.Add(10);
-        DeliveryRecords[0].Records.Add(20);
-        DeliveryRecords[0].Records.Add(30);
-        DeliveryRecords[0].Records.Add(40);
-        DeliveryRecords[0].Records.Add(50);
-        DeliveryRecords[0].Records.Add(60);
-        DeliveryRecords[1].Records.Add(50);
-        DeliveryRecords[1].Records.Add(60);
-        DeliveryRecords[2].Records.Add(50);
-        DeliveryRecords[2].Records.Add(60);
-        //--------------------------
-        DeliveryRecords[0].Records.Sort();
-        DeliveryRecords[1].Records.Sort();
-        DeliveryRecords[2].Records.Sort();
-        if (DeliveryRecords[0].Records.Num() > 10) DeliveryRecords[0].Records.SetNum(10);
-        if (DeliveryRecords[1].Records.Num() > 10) DeliveryRecords[1].Records.SetNum(10);
-        if (DeliveryRecords[2].Records.Num() > 10) DeliveryRecords[2].Records.SetNum(10);*/
-        //if (DeliveryRecords[Stage].Records.Num() > 10) DeliveryRecords[Stage].Records.SetNum(10);
     }
 
     UFUNCTION(BlueprintCallable)
@@ -108,6 +114,9 @@ public:
     //이번 판에 10위 이내 신기록을 달성했는지 확인하는 플래그
     UPROPERTY(BlueprintReadWrite, Category = "GameLogic")
     bool bIsNewRecord = false;
+
+    UPROPERTY(BlueprintReadWrite, Category = "GameLogic")
+    int32 LatestRecordIndex = 0;
 
     //치트용
     UFUNCTION(Exec)
