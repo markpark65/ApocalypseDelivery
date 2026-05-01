@@ -140,9 +140,6 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     class UPhysicsConstraintComponent* PhysicsConstraint;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-    class UNiagaraComponent* TeleportEffectComp;
-
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
     float VelocityTiltRatio;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
@@ -180,6 +177,14 @@ protected:
     bool HasTeleport;
     FVector TeleportCoordinate;
     void UseTeleport();
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    class UNiagaraComponent* TeleportEffectComp;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Components")
+    class USoundBase* TeleportSettingSound;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Components")
+    class USoundBase* TeleportingSound;
+    FTimerHandle TeleportTimerHandle;
+
 
     //드론 SFX
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")

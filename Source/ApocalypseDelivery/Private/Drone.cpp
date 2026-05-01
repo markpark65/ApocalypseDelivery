@@ -62,6 +62,7 @@ ADrone::ADrone()
 	TeleportEffectComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TeleportEffectComp"));
 	TeleportEffectComp->SetupAttachment(RootComponent);
 	TeleportEffectComp->SetAutoActivate(false); // 자동 재생 여부
+	TeleportEffectComp->SetCustomTimeDilation(2.0f);
 
 
 	// ── 미니맵 SceneCapture 설정 ──
@@ -234,7 +235,7 @@ void ADrone::Tick(float DeltaTime)
 
 	//카메라 FOV 속도에 따라 조정
 	if (IsMoving && !(GetWorld()->GetTimerManager().IsTimerActive(ControlTimerHandle))) {
-		CameraComp->FieldOfView = 90 + GetVelocity().Length() * FOVChangeRate;
+		CameraComp->FieldOfView = FMath::Lerp(CameraComp->FieldOfView, 90 + GetVelocity().Length() * FOVChangeRate, FOVChangeRate);//90 + GetVelocity().Length() * FOVChangeRate;
 	}
 	else {
 		CameraComp->FieldOfView = FMath::Lerp(CameraComp->FieldOfView, 90, FOVChangeRate);
@@ -422,14 +423,37 @@ void ADrone::UseTeleport()
 		if (TeleportCoordinate == FVector::ZeroVector) {
 			TeleportCoordinate = GetActorLocation();
 			UE_LOG(LogTemp, Warning, TEXT("TeleportCoordinate has set - %f %f %f"), TeleportCoordinate.X, TeleportCoordinate.Y, TeleportCoordinate.Z);
+			if (IsValid(TeleportSettingSound)) {
+				UE_LOG(LogTemp, Warning, TEXT("Teleport Setting Sound Play"));
+				UGameplayStatics::PlaySound2D(GetWorld(), TeleportSettingSound);
+			}
+			else {
+				UE_LOG(LogTemp, Warning, TEXT("Teleport Setting Sound Not valid"));
+			}
 			GM->CurrentHUD->SetInteractionPrompt(true, "Press 'V' to teleport.");
 		}
 		else {
-			SetActorLocation(TeleportCoordinate);
+			GetWorldTimerManager().SetTimer(TeleportTimerHandle, [this](){
+				SetActorLocation(TeleportCoordinate); 
+				TeleportCoordinate = FVector::ZeroVector;
+				}, 0.5f, false);
 			MovementComp->StopMovementImmediately();
 			CurrentDirection = FVector::ZeroVector;
 			HasTeleport = false;
-			TeleportCoordinate = FVector::ZeroVector;
+			if (IsValid(TeleportingSound)) {
+				UE_LOG(LogTemp, Warning, TEXT("Teleport Sound Play"));
+				UGameplayStatics::PlaySound2D(GetWorld(), TeleportingSound);
+			}
+			else {
+				UE_LOG(LogTemp, Warning, TEXT("Teleport Sound not valid"));
+			}
+			if (IsValid(TeleportEffectComp) && IsValid(TeleportEffectComp->GetFXSystemAsset())) {
+				UE_LOG(LogTemp, Warning, TEXT("Teleport Effect play"));
+				TeleportEffectComp->Activate(true);
+			}
+			else {
+				UE_LOG(LogTemp, Warning, TEXT("Teleport Effect not valid"));
+			}
 			UE_LOG(LogTemp, Warning, TEXT("Teleport Completed - %f %f %f"), TeleportCoordinate.X, TeleportCoordinate.Y, TeleportCoordinate.Z);
 			GM->CurrentHUD->SetInteractionPrompt(false,"");
 		}
