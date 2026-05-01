@@ -140,6 +140,9 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     class UPhysicsConstraintComponent* PhysicsConstraint;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    class UNiagaraComponent* TeleportEffectComp;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
     float VelocityTiltRatio;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")

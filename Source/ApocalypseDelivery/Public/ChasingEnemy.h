@@ -37,6 +37,9 @@ protected:
 	UStaticMeshComponent* MeshComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crow)
+	UParticleSystemComponent* ParticleComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crow)
 	UFloatingPawnMovement* MovementComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crow)

@@ -15,6 +15,8 @@
 #include "Components/SceneCaptureComponent2D.h"
 #include "Engine/TextureRenderTarget2D.h"
 
+//#include "NiagaraSystem.h"
+#include "NiagaraComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
@@ -56,6 +58,11 @@ ADrone::ADrone()
 
 	PhysicsConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("PhysicalConstComp"));
 	PhysicsConstraint->SetupAttachment(RootComponent);
+
+	TeleportEffectComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TeleportEffectComp"));
+	TeleportEffectComp->SetupAttachment(RootComponent);
+	TeleportEffectComp->SetAutoActivate(false); // 자동 재생 여부
+
 
 	// ── 미니맵 SceneCapture 설정 ──
 	MinimapCaptureComp = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("MinimapCaptureComp"));

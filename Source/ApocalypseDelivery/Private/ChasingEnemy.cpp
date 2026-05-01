@@ -6,6 +6,7 @@
 #include "ApocalypseDroneController.h"
 
 #include "Components/StaticMeshComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
@@ -23,6 +24,9 @@ AChasingEnemy::AChasingEnemy()
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetupAttachment(RootComponent);
+
+	ParticleComp = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleComp"));
+	ParticleComp->SetupAttachment(RootComponent);
 
 	MovementComp = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComp"));
 	MovementComp->SetUpdatedComponent(SphereComp);
